@@ -1,0 +1,10 @@
+services:
+  transcriber:
+    build: ./whisper
+  
+  database:
+    image: postgres:18-alpine
+
+  api:
+    build: ./api
+  

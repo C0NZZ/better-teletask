@@ -5,9 +5,7 @@ from dotenv import load_dotenv, find_dotenv
 # Load the .env file
 load_dotenv(find_dotenv())
 
-# Read environment variables
-API_TOKEN = os.environ.get("POSTGRES_PASSWORD")
-print(API_TOKEN)
+
 
 # --- Database Connection Details ---
 DB_NAME = os.environ.get("POSTGRES_DB")

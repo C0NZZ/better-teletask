@@ -4,8 +4,8 @@ from dotenv import load_dotenv, find_dotenv
 
 # Load the .env file
 load_dotenv(find_dotenv())
-
-
+script_dir = os.path.dirname(os.path.abspath(__file__))
+input_path = os.path.join(script_dir, "output/")
 
 # --- Database Connection Details ---
 DB_NAME = os.environ.get("POSTGRES_DB")
@@ -40,8 +40,10 @@ def initDatabse():
             cur.close()
             conn.close()
 
-def save_vtt_as_blob(file_path, teletaskid, language):
+def save_vtt_as_blob(teletaskid, language):
     conn = None
+    file_path = os.path.join(input_path, teletaskid+".vtt")
+    print(file_path)
     try:
         # --- Connect to PostgreSQL ---
         conn = psycopg2.connect(
@@ -121,12 +123,13 @@ def get_all_vtt_blobs():
             cur.close()
             conn.close()
 
+if __name__ == '__main__':
 # --- Example Usage ---
 # Create a dummy file first
-with open("sample.vtt", "w") as f:
-    f.write("WEBVTT\n\n00:00:01.000 --> 00:00:04.000\nHello world.")
-initDatabse()
-save_vtt_as_blob("sample.vtt",1,"de")
+    with open("sample.vtt", "w") as f:
+        f.write("WEBVTT\n\n00:00:01.000 --> 00:00:14.000\nHello world.")
+    initDatabse()
+    save_vtt_as_blob("1","de")
 
-# Query and print all blobs
-get_all_vtt_blobs()
+    # Query and print all blobs
+    get_all_vtt_blobs()

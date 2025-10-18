@@ -2,6 +2,9 @@ import requests
 import psycopg2
 import os
 from dotenv import load_dotenv, find_dotenv
+from krabbler2 import fetch_and_convert
+from whisper import transcribeVideoByID
+from database import save_vtt_as_blob
 
 # Load the .env file
 load_dotenv(find_dotenv())
@@ -40,8 +43,8 @@ def getLatestTeletaskID():
 
 baseurl = "https://www.tele-task.de/lecture/video/"
 
-def checkLatestVideo(url):
-
+def checkVideoByID(id):
+    url = baseurl+id
     try:
         response = requests.get(url)
         if response.status_code == 404:
@@ -51,9 +54,13 @@ def checkLatestVideo(url):
             print("not allowed, please use a session cookie")
             return("401")
         elif response.ok:
-            print("exists")
+            print("exists, fetching mp4")
             # run download code
+            fetch_and_convert(id)
+            # transcribe 
+            transcribeVideoByID(id)
             # save to database
+            save_vtt_as_blob(id)
             # id should increase by 1
             return("200")
 
@@ -65,16 +72,21 @@ def checkLatestVideo(url):
 
 url = "https://www.tele-task.de/lecture/video/"
 
-if __name__ == '__main__':
-    latestID = getLatestTeletaskID()
-    #latestID = "11401"
-    print(latestID)
-    url = baseurl+latestID
-    print(url)
-    status = checkLatestVideo(url)
+
+def checkerLoop():
+    #latestID = getLatestTeletaskID()
+    latestID = "11401"
+    status = checkVideoByID(str(int(latestID)+1))
     while(status == "200"):
         temp = int(latestID) + 1
         latestID=str(temp)
-        status = checkLatestVideo(baseurl+latestID)
+        status = checkVideoByID(baseurl+latestID)
+
+if __name__ == '__main__':
+    #checkerLoop()
+    id = "11412"
+    checkVideoByID(id)
+
+    
     
 

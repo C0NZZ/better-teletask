@@ -6,7 +6,7 @@ import ffmpeg
 import os
 
 script_dir = os.path.dirname(os.path.abspath(__file__))
-baseoutput =  os.path.join(script_dir, "output/")
+baseoutput =  os.path.join(script_dir, "input/")
 baseurl = "https://www.tele-task.de/lecture/video/" 
 url = "https://www.tele-task.de/lecture/video/11420/"
 
@@ -96,12 +96,12 @@ def fetch_and_convert(id):
         print('Attempting direct conversion from URL to MP3...')
         print(baseoutput+id+".mp3")
         convert_to_mp3(mp4url, baseoutput+id+".mp3")
-        print('Created output_stream.mp3')
+        print('Created'+baseoutput+id+".mp3")
     except Exception:
         print('Direct conversion failed, downloading then converting...')
         downloadMP4(mp4url)
         convert_to_mp3('video.mp4', 'output_download.mp3')
-        print('Created output_download.mp3')
+        print('Created'+baseoutput+id+".mp3")
 
 
 if __name__ == '__main__':

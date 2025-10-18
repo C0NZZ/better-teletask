@@ -3,11 +3,15 @@ from bs4 import BeautifulSoup
 import json
 from tqdm import tqdm
 import ffmpeg
+import os
 
-
+script_dir = os.path.dirname(os.path.abspath(__file__))
+baseoutput =  os.path.join(script_dir, "output/")
+baseurl = "https://www.tele-task.de/lecture/video/" 
 url = "https://www.tele-task.de/lecture/video/11420/"
 
-def fetchMP4(url):
+def fetchMP4(id):
+    url = baseurl+id
     response = requests.get(url)
     response.raise_for_status()
 
@@ -80,9 +84,9 @@ def convert_to_mp3(source, out_mp3):
         raise
 
 
-def fetch_and_convert(url):
+def fetch_and_convert(id):
     # Find MP4 URL
-    mp4url = fetchMP4(url)
+    mp4url = fetchMP4(id)
     if not mp4url:
         print('No MP4 URL found')
         return
@@ -90,7 +94,8 @@ def fetch_and_convert(url):
     # Try direct conversion from remote URL
     try:
         print('Attempting direct conversion from URL to MP3...')
-        convert_to_mp3(mp4url, 'output_stream.mp3')
+        print(baseoutput+id+".mp3")
+        convert_to_mp3(mp4url, baseoutput+id+".mp3")
         print('Created output_stream.mp3')
     except Exception:
         print('Direct conversion failed, downloading then converting...')
@@ -102,8 +107,8 @@ def fetch_and_convert(url):
 if __name__ == '__main__':
     # Lazy import subprocess to avoid top-level dependency errors if unused
     import subprocess
-
-    fetch_and_convert(url)
+    id="1"
+    fetch_and_convert(id)
 
 #mp4url = fetchMP4(url)
 #downloadMP4(mp4url)

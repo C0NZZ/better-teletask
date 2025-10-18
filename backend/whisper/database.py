@@ -23,6 +23,8 @@ def initDatabse():
             dbname=DB_NAME, user=DB_USER, password=DB_PASS, host=DB_HOST, port=DB_PORT
         )
         cur = conn.cursor()
+        
+        print("connected")
 
         # --- Create Table (if it doesn't exist) ---
         cur.execute("""
@@ -40,7 +42,7 @@ def initDatabse():
             cur.close()
             conn.close()
 
-def save_vtt_as_blob(file_path):
+def save_vtt_as_blob(file_path, teletaskid, language):
     conn = None
     try:
         # --- Connect to PostgreSQL ---
@@ -64,8 +66,8 @@ def save_vtt_as_blob(file_path):
             vtt_binary_data = f.read()
         
         cur.execute(
-            "INSERT INTO vtt_files (filename, vtt_data) VALUES (%s, %s);",
-            (file_path, vtt_binary_data)
+            "INSERT INTO vtt_files (teletaskid,language,vtt_data) VALUES (%s,%s, %s);",
+            (teletaskid,language,vtt_binary_data)
         )
         
         conn.commit()
@@ -78,9 +80,55 @@ def save_vtt_as_blob(file_path):
             cur.close()
             conn.close()
 
+def get_all_vtt_blobs():
+    conn = None
+    try:
+        # --- Connect to PostgreSQL ---
+        conn = psycopg2.connect(
+            dbname=DB_NAME, user=DB_USER, password=DB_PASS, host=DB_HOST, port=DB_PORT
+        )
+        cur = conn.cursor()
+
+        # --- Query all records ---
+        cur.execute("SELECT id, teletaskid, language, vtt_data FROM vtt_files ORDER BY id;")
+        rows = cur.fetchall()
+        
+        print(f"\n=== Found {len(rows)} VTT file(s) in database ===\n")
+        
+        for row in rows:
+            record_id, teletaskid, language, vtt_data = row
+            print(f"--- Record ID: {record_id} ---")
+            print(f"Teletask ID: {teletaskid}")
+            print(f"Language: {language}")
+            print(f"VTT Data (size): {len(vtt_data)} bytes")
+            print(f"VTT Content:")
+            print("-" * 50)
+                # Convert memoryview to bytes, then decode to string for display
+            try:
+                vtt_bytes = bytes(vtt_data)
+                vtt_content = vtt_bytes.decode('utf-8')
+                print(vtt_content)
+            except UnicodeDecodeError:
+                print("(Binary data could not be decoded as UTF-8)")
+            print("-" * 50)
+            print()
+        
+        return rows
+
+    except (Exception, psycopg2.Error) as error:
+        print("Error while querying PostgreSQL", error)
+        return []
+    finally:
+        if conn:
+            cur.close()
+            conn.close()
+
 # --- Example Usage ---
 # Create a dummy file first
 with open("sample.vtt", "w") as f:
     f.write("WEBVTT\n\n00:00:01.000 --> 00:00:04.000\nHello world.")
+initDatabse()
+save_vtt_as_blob("sample.vtt",1,"de")
 
-save_vtt_as_blob("sample.vtt")
+# Query and print all blobs
+get_all_vtt_blobs()

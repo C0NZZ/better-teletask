@@ -60,7 +60,7 @@ def checkVideoByID(id):
             # transcribe 
             transcribeVideoByID(id)
             # save to database
-            save_vtt_as_blob(id)
+            save_vtt_as_blob(id,"original")
             # id should increase by 1
             return("200")
 

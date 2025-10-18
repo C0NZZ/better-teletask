@@ -1,2 +1,4 @@
 .env
 node_modules
+*.mp3
+*.vtt

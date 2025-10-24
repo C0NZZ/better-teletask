@@ -2,6 +2,6 @@ whisperx
 psycopg2-binary
 python-dotenv
 beautifulsoup4
-ffmpeg
+ffmpeg-python
 uvicorn
 fastapi

@@ -1,0 +1,20 @@
+{
+  "manifest_version": 2,
+  "name": "Better Tele-Task",
+  "version": "0.1",
+
+  "description": "Adds useful features like subtitles to HPI Tele-Task.",
+
+  "homepage_url": "https://github.com/C0NZZ/better-teletask",
+
+  "icons": {
+    "48": "icons/48.png"
+  },
+
+  "content_scripts": [
+    {
+      "matches": ["*://www.tele-task.de/*", "*://localhost/*", "*://127.0.0.1/*"],
+      "js": ["subtitles.js"]
+    }
+  ]
+}

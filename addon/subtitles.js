@@ -1,24 +1,39 @@
 (async function addSubtitles() {
   const PLAYER_ID = 'player';
-  const CAPTIONS_TO_ADD = (() => {
-    const path = (typeof window !== 'undefined' && window.location && window.location.pathname) ? window.location.pathname : '';
+
+  const path = (typeof window !== 'undefined' && window.location && window.location.pathname) ? window.location.pathname : '';
     const segments = path.split('/').filter(Boolean);
     let last = segments.length ? segments[segments.length - 1] : '';
     last = decodeURIComponent(last || 'index');
     last = encodeURIComponent(last);
+    const suburl = `https://test.com/btt/${last}/de`
+
+  async function fetchSubtitle(url) {
+    try {
+      const response = await fetch(suburl);
+      if (!response.ok) {
+        throw new Error(`Failed to fetch subtitle: ${response.statusText}`);
+      }
+      return await response.text();
+    } catch (error) {
+      console.error('[btt-subtitles] Error fetching subtitle:', error);
+      return null;
+    }
+  }
+
+  const subtitleText = await fetchSubtitle(suburl);
+  const BLOB = new Blob([subtitleText], { type: 'text/vtt'});
+  const LOCALURL = URL.createObjectURL(BLOB)
+
+
+  const CAPTIONS_TO_ADD = (() => {
     return [
       {
         language: 'de',
         name: 'Deutsch',
-        url: `https://test.com/btt/${last}/de`,
+        url: `${LOCALURL}`,
         type: 'default'
-      },
-      // {
-      //   language: 'en',
-      //   name: 'English',
-      //   url: 'https://conzz.de/btt/${last}/en',
-      //   type: 'default'
-      // }
+      }
     ];
   })();
 

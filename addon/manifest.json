@@ -11,6 +11,10 @@
     "48": "icons/48.png"
   },
 
+  "permissions": [
+    "https://test.com/*"
+  ],
+
   "content_scripts": [
     {
       "matches": ["*://www.tele-task.de/*", "*://localhost/*", "*://127.0.0.1/*"],

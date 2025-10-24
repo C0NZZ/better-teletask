@@ -58,9 +58,9 @@ def checkVideoByID(id):
             # run download code
             fetch_and_convert(id)
             # transcribe 
-            transcribeVideoByID(id)
+            language, isOriginalLanguage = transcribeVideoByID(id)
             # save to database
-            save_vtt_as_blob(id,"original")
+            save_vtt_as_blob(id,language,isOriginalLanguage)
             # id should increase by 1
             return("200")
 
@@ -82,10 +82,20 @@ def checkerLoop():
         latestID=str(temp)
         status = checkVideoByID(baseurl+latestID)
 
+def checkerTestLoop():
+    #latestID = getLatestTeletaskID()
+    latestID = "11401"
+    status = checkVideoByID(str(int(latestID)+1))
+    while(status == "200"):
+        temp = int(latestID) + 1
+        latestID=str(temp)
+        status = checkVideoByID(baseurl+latestID)
+
 if __name__ == '__main__':
-    #checkerLoop()
+    checkerLoop()
     id = "11412"
     checkVideoByID(id)
+
 
     
     

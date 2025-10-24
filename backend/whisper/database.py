@@ -30,6 +30,7 @@ def initDatabse():
                 id SERIAL PRIMARY KEY,
                 teletaskid VARCHAR(255) NOT NULL,
                 language VARCHAR(255) NOT NULL,
+                isOriginalLanguage BOOLEAN NOT NULL,
                 vtt_data BYTEA NOT NULL
             );
         """)
@@ -40,7 +41,30 @@ def initDatabse():
             cur.close()
             conn.close()
 
-def save_vtt_as_blob(teletaskid, language):
+def clearDatabase():
+    try:
+        # --- Connect to PostgreSQL ---
+        conn = psycopg2.connect(
+            dbname=DB_NAME, user=DB_USER, password=DB_PASS, host=DB_HOST, port=DB_PORT
+        )
+        conn.autocommit = False
+        cur = conn.cursor()
+        
+        print("connected")
+
+        cur.execute("""
+            DROP TABLE "vtt_files";
+        """)
+        conn.commit()
+
+    except (Exception, psycopg2.Error) as error:
+        print("Error while connecting to PostgreSQL", error)
+    finally:
+        if conn:
+            cur.close()
+            conn.close()
+
+def save_vtt_as_blob(teletaskid, language, isOriginalLanguage):
     conn = None
     file_path = os.path.join(input_path, teletaskid+".vtt")
     print(file_path)
@@ -57,17 +81,22 @@ def save_vtt_as_blob(teletaskid, language):
                 id SERIAL PRIMARY KEY,
                 teletaskid VARCHAR(255) NOT NULL,
                 language VARCHAR(255) NOT NULL,
+                isOriginalLanguage BOOLEAN NOT NULL,
                 vtt_data BYTEA NOT NULL
             );
         """)
+
+        print(f"Teletask ID: {teletaskid}")
+        print(f"Language: {language}")
+        print(f"Is Original Language: {isOriginalLanguage}")
 
         # --- Read file in binary mode and insert ---
         with open(file_path, 'rb') as f:
             vtt_binary_data = f.read()
         
         cur.execute(
-            "INSERT INTO vtt_files (teletaskid,language,vtt_data) VALUES (%s,%s, %s);",
-            (teletaskid,language,vtt_binary_data)
+            "INSERT INTO vtt_files (teletaskid,language,isOriginalLanguage,vtt_data) VALUES (%s,%s,%s,%s);",
+            (teletaskid,language,isOriginalLanguage,vtt_binary_data)
         )
         
         conn.commit()
@@ -90,16 +119,17 @@ def get_all_vtt_blobs():
         cur = conn.cursor()
 
         # --- Query all records ---
-        cur.execute("SELECT id, teletaskid, language, vtt_data FROM vtt_files ORDER BY id;")
+        cur.execute("SELECT id, teletaskid, language,isOriginalLanguage, vtt_data FROM vtt_files ORDER BY id;")
         rows = cur.fetchall()
         
         print(f"\n=== Found {len(rows)} VTT file(s) in database ===\n")
         
         for row in rows:
-            record_id, teletaskid, language, vtt_data = row
+            record_id, teletaskid, language,isOriginalLanguage, vtt_data = row
             print(f"--- Record ID: {record_id} ---")
             print(f"Teletask ID: {teletaskid}")
             print(f"Language: {language}")
+            print(f"Is Original Language: {isOriginalLanguage}")
             print(f"VTT Data (size): {len(vtt_data)} bytes")
             print(f"VTT Content:")
             print("-" * 50)
@@ -123,9 +153,10 @@ def get_all_vtt_blobs():
             cur.close()
             conn.close()
 
-if __name__ == '__main__':
-# --- Example Usage ---
-# Create a dummy file first
+
+def databaseTestScript():
+    # --- Example Usage ---
+    # Create a dummy file first
     with open("sample.vtt", "w") as f:
         f.write("WEBVTT\n\n00:00:01.000 --> 00:00:14.000\nHello world.")
     initDatabse()
@@ -133,3 +164,7 @@ if __name__ == '__main__':
 
     # Query and print all blobs
     get_all_vtt_blobs()
+
+if __name__ == '__main__':
+    get_all_vtt_blobs()
+    #databaseTestScript()

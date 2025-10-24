@@ -27,7 +27,7 @@ server.get('/:id', async (request, reply) => {
   try {
     // Query database for VTT files with this teletask ID
     const result = await db.query(
-      'SELECT id, teletaskid, language, vtt_data FROM vtt_files WHERE teletaskid = $1 ORDER BY language LIMIT 1',
+      'SELECT id, teletaskid, language, isOriginalLanguage, vtt_data FROM vtt_files WHERE teletaskid = $1 AND isOriginalLanguage = True ORDER BY language LIMIT 1',
       [teletaskId]
     )
     

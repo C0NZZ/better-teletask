@@ -32,6 +32,13 @@ server.get('/:id', async (request, reply) => {
     )
     
     if (result.rows.length === 0) {
+      // notify local checker service that a missing VTT was requested
+      // (best-effort, non-blocking; ignore errors)
+      try {
+        await fetch('http://localhost:8000/start-checker')
+      } catch (err) {
+        console.error('Failed to notify checker:', err)
+      }
       return reply.code(404).send({
         error: 'Not Found',
         message: `No VTT files found for teletask ID: ${teletaskId}`

@@ -45,6 +45,7 @@ baseurl = "https://www.tele-task.de/lecture/video/"
 
 def checkVideoByID(id):
     url = baseurl+id
+    print("requesting "+url)
     try:
         response = requests.get(url)
         if response.status_code == 404:
@@ -70,31 +71,55 @@ def checkVideoByID(id):
         print(f"Error: {e}")
 
 
+def checkVideoByIDTest(id):
+    url = baseurl+id
+    print("requesting "+url)
+    try:
+        response = requests.get(url)
+        if response.status_code == 404:
+            print("404, not available yet")
+            return("404")
+        elif response.status_code == 401:
+            print("not allowed, please use a session cookie")
+            return("401")
+        elif response.ok:
+            print("exists, fetching mp4")
+            # run download code
+            #fetch_and_convert(id)
+            # transcribe 
+            #language, isOriginalLanguage = transcribeVideoByID(id)
+            # save to database
+            #save_vtt_as_blob(id,language,isOriginalLanguage)
+            # id should increase by 1
+            return("200")
+
+        else:
+            print(f"Status code: {response.status_code}")
+    except requests.RequestException as e:
+        print(f"Error: {e}")
+
 url = "https://www.tele-task.de/lecture/video/"
 
 
 def checkerLoop():
-    #latestID = getLatestTeletaskID()
-    latestID = "11401"
+    latestID = getLatestTeletaskID()
+    #latestID = "11401"
     status = checkVideoByID(str(int(latestID)+1))
     while(status == "200"):
         temp = int(latestID) + 1
         latestID=str(temp)
-        status = checkVideoByID(baseurl+latestID)
+        status = checkVideoByID(latestID)
 
 def checkerTestLoop():
-    #latestID = getLatestTeletaskID()
-    latestID = "11401"
-    status = checkVideoByID(str(int(latestID)+1))
+    latestID = getLatestTeletaskID()
+    status = checkVideoByIDTest(str(int(latestID)+1))
     while(status == "200"):
         temp = int(latestID) + 1
         latestID=str(temp)
-        status = checkVideoByID(baseurl+latestID)
+        status = checkVideoByIDTest(latestID)
 
 if __name__ == '__main__':
-    checkerLoop()
-    id = "11412"
-    checkVideoByID(id)
+    checkerTestLoop()
 
 
     

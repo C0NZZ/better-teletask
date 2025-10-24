@@ -1,98 +1,66 @@
 import uvicorn
 import asyncio
 from fastapi import FastAPI, HTTPException
-from typing import Any, Dict
-from checker import checkVideoByID
+from checker import checkerLoop
 
 # 1. Create the FastAPI app instance
 app = FastAPI()
 
-# Very small "seen" trackers (non-persistent). If an id was requested once,
-# subsequent requests will get a short acknowledgement instead of re-processing.
-_seen_ids: set[str] = set()
-_seen_keys: set[tuple] = set()
-
-# Per-key asyncio locks to avoid races when two requests for the same id arrive
-# concurrently. Use a small lock-map protected by _locks_lock when creating new locks.
-_locks: Dict[Any, asyncio.Lock] = {}
-_locks_lock = asyncio.Lock()
-
-
-async def _get_lock_for(key: Any) -> asyncio.Lock:
-    """Return an asyncio.Lock for the given key, creating it if necessary.
-
-    This function is safe to call concurrently.
-    """
-    async with _locks_lock:
-        lock = _locks.get(key)
-        if lock is None:
-            lock = asyncio.Lock()
-            _locks[key] = lock
-        return lock
-
 # 2. Define the /ping endpoint
 @app.get("/ping")
 async def ping_pong():
-    """
-    When this endpoint is hit, it returns the string "pong".
-    FastAPI automatically handles converting this to a JSON response.
-    """
+    #checkerLoop();
     return "pong"
 
 
-# 3. Dynamic route that accepts any natural number (positive integer)
-@app.get("/{item_id}")
-async def get_by_id(item_id: str):
-    """Return a simple response for any natural-number id.
-
-    Simpler behavior: if this id was already requested earlier, respond with
-    a short acknowledgement. Otherwise perform the work once.
-    """
-    # Use a per-id lock to prevent a race where two concurrent requests both
-    # observe the id as unseen and both proceed. Only one will run the work.
-    lock = await _get_lock_for(item_id)
-    async with lock:
-        if item_id in _seen_ids:
-            return {"message": "already request came in"}
-
-        # Mark as seen and perform the work once
-        _seen_ids.add(item_id)
-
-        # Replace with real work (DB, file, etc.). Keep async-friendly.
-        async def do_work(i: int):
-            await asyncio.sleep(0)
-            checkVideoByID(item_id)
-            return {"id": i, "message": f"Requested resource for id {i}"}
-
-        result = await do_work(item_id)
-        return result
+# Single boolean flag to indicate whether checkerLoop is currently running.
+# Use this to prevent starting multiple concurrent checker runs.
+checker_running = False
 
 
-@app.get("/{item_id}/{language}")
-async def get_by_id_and_language(item_id: int, language: str):
-    """Return a response for a given teletask id and language.
+def _set_checker_running(value: bool) -> None:
+    global checker_running
+    checker_running = value
 
-    Simpler behavior: if this id+language was already requested earlier, return
-    a short acknowledgement. Otherwise perform the work once.
-    """
-    if item_id <= 0:
-        raise HTTPException(status_code=400, detail="ID must be a positive integer")
 
-    cache_key = (item_id, language)
+def is_checker_running() -> bool:
+    return checker_running
 
-    lock = await _get_lock_for(cache_key)
-    async with lock:
-        if cache_key in _seen_keys:
-            return {"message": "already request came in"}
 
-        _seen_keys.add(cache_key)
+# Async lock to protect check-and-set of checker_running to avoid races
+_checker_lock = asyncio.Lock()
 
-        async def do_work(i: int, lang: str):
-            await asyncio.sleep(0)
-            return {"id": i, "language": lang, "message": f"Requested resource for id {i} and language {lang}"}
 
-        result = await do_work(item_id, language)
-        return result
+async def _run_checker_background():
+    """Run the (possibly blocking) checkerLoop in a threadpool and clear the flag when done."""
+    loop = asyncio.get_running_loop()
+    try:
+        # run in executor in case checkerLoop is blocking
+        await loop.run_in_executor(None, checkerLoop)
+    finally:
+        # Ensure we clear the running flag under the same lock to avoid races
+        async with _checker_lock:
+            _set_checker_running(False)
+
+
+@app.get("/start-checker")
+async def start_checker():
+    """Start checkerLoop in background if not already running."""
+    # Protect check-and-set with a lock to avoid a race where two requests
+    # both see the flag as False and both start the checker.
+    async with _checker_lock:
+        if is_checker_running():
+            return {"message": "checker already running"}
+        _set_checker_running(True)
+
+    # Start background run without holding the lock
+    asyncio.create_task(_run_checker_background())
+    return {"message": "checker started"}
+
+
+@app.get("/checker-status")
+async def checker_status():
+    return {"running": is_checker_running()}
 
 
 # 4. Add the main entry point to run the server

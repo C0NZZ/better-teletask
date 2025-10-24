@@ -45,8 +45,8 @@ def downloadMP4(url):
     mp4_response = requests.get(url, stream=True)
     mp4_response.raise_for_status()
     total_size = int(mp4_response.headers.get('content-length', 0))
-    with open("video.mp4", "wb") as f, tqdm(
-        desc="Downloading video.mp4",
+    with open(baseoutput+id+".mp4", "wb") as f, tqdm(
+        desc="Downloading "+baseoutput+id+".mp4",
         total=total_size,
         unit='B',
         unit_scale=True,
@@ -55,7 +55,7 @@ def downloadMP4(url):
         for chunk in mp4_response.iter_content(chunk_size=8192):
             f.write(chunk)
             bar.update(len(chunk))
-    print("Download complete: video.mp4")
+    print("Download complete:"+baseoutput+id+".mp4")
 
 
 def convert_to_mp3(source, out_mp3):
@@ -100,7 +100,7 @@ def fetch_and_convert(id):
     except Exception:
         print('Direct conversion failed, downloading then converting...')
         downloadMP4(mp4url)
-        convert_to_mp3('video.mp4', 'output_download.mp3')
+        convert_to_mp3(baseoutput+id+".mp4", baseoutput+id+".mp3")
         print('Created'+baseoutput+id+".mp3")
 
 

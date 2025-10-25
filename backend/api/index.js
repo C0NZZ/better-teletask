@@ -50,7 +50,6 @@ server.get('/:id', async (request, reply) => {
     
     // Set headers for VTT file
     reply.header('Content-Type', 'text/vtt; charset=utf-8')
-    reply.header('Content-Disposition', `attachment; filename="teletask-${teletaskId}-${vttFile.language}.vtt"`)
     
     return vttContent
     

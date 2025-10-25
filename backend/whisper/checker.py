@@ -119,7 +119,7 @@ def checkerTestLoop():
         status = checkVideoByIDTest(latestID)
 
 if __name__ == '__main__':
-    checkerTestLoop()
+    checkerLoop()
 
 
     

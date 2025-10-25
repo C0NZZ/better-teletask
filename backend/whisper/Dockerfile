@@ -8,6 +8,6 @@ RUN pip install -r requirements.txt
 
 RUN mkdir input output
 
-# COPY cronjob auf checker.py
+# COPY cronjob curl auf http://localhost:8000/start-checker
 
 CMD [ "python index.py" ]

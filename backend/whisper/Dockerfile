@@ -2,4 +2,12 @@ FROM python:3.14-alpine
 
 WORKDIR /whisper
 
-RUN pip install whisperx
+COPY checker.py database.py index.py krabbler2.py whisper.py requirements.txt ./
+
+RUN pip install -r requirements.txt
+
+RUN mkdir input output
+
+# COPY cronjob auf checker.py
+
+CMD [ "python index.py" ]

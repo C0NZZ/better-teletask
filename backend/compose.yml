@@ -1,6 +1,8 @@
 services:
-  #transcriber:
-  #  build: ./whisper
+  transcriber:
+    build: ./whisper
+    ports:
+      - "8000:8000"
   
   database:
     image: postgres:18-alpine
@@ -8,6 +10,9 @@ services:
     ports:
       - "5432:5432"
 
-  #api:
-  #  build: ./api
+  api:
+   build: ./api
+   ports:
+    - "8080:8080"
+
   

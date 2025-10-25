@@ -35,7 +35,7 @@ def getLatestTeletaskID():
 
     except (Exception, psycopg2.Error) as error:
         print("Error while querying PostgreSQL", error)
-        return -1
+        return 11400;
     finally:
         if conn:
             cur.close()
@@ -52,8 +52,8 @@ def checkVideoByID(id):
             print("404, not available yet")
             return("404")
         elif response.status_code == 401:
-            print("not allowed, please use a session cookie")
-            return("401")
+            print("not allowed, please use a session cookie, trying next")
+            return("200")
         elif response.ok:
             print("exists, fetching mp4")
             # run download code

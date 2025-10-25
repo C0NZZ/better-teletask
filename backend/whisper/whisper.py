@@ -43,10 +43,17 @@ def transcribeVideoByID(id):
         {"max_line_width": None, "max_line_count": None, "highlight_words": False},
     )
 
+    txt_writer = get_writer("txt", output_path)
+    txt_writer(
+        aligned_result,
+        file_path,
+        {"max_line_width": None, "max_line_count": None, "highlight_words": False},
+    )
+
     return language, True
 
 
 if __name__ == '__main__':
     # Lazy import subprocess to avoid top-level dependency errors if unused
-    id="1"
+    id="11410"
     transcribeVideoByID(id)

@@ -31,7 +31,8 @@ def initDatabse():
                 teletaskid VARCHAR(255) NOT NULL,
                 language VARCHAR(255) NOT NULL,
                 isOriginalLanguage BOOLEAN NOT NULL,
-                vtt_data BYTEA NOT NULL
+                vtt_data BYTEA NOT NULL,
+                txt_data BYTEA NOT NULL
             );
         """)
     except (Exception, psycopg2.Error) as error:
@@ -67,6 +68,7 @@ def clearDatabase():
 def save_vtt_as_blob(teletaskid, language, isOriginalLanguage):
     conn = None
     file_path = os.path.join(input_path, teletaskid+".vtt")
+    file_path_txt = os.path.join(input_path, teletaskid+".txt")
     print(file_path)
     try:
         # --- Connect to PostgreSQL ---
@@ -82,7 +84,8 @@ def save_vtt_as_blob(teletaskid, language, isOriginalLanguage):
                 teletaskid VARCHAR(255) NOT NULL,
                 language VARCHAR(255) NOT NULL,
                 isOriginalLanguage BOOLEAN NOT NULL,
-                vtt_data BYTEA NOT NULL
+                vtt_data BYTEA NOT NULL,
+                txt_data BYTEA NOT NULL
             );
         """)
 
@@ -94,9 +97,14 @@ def save_vtt_as_blob(teletaskid, language, isOriginalLanguage):
         with open(file_path, 'rb') as f:
             vtt_binary_data = f.read()
         
+
+        with open(file_path_txt, 'rb') as f:
+            txt_binary_data = f.read()
+
+
         cur.execute(
-            "INSERT INTO vtt_files (teletaskid,language,isOriginalLanguage,vtt_data) VALUES (%s,%s,%s,%s);",
-            (teletaskid,language,isOriginalLanguage,vtt_binary_data)
+            "INSERT INTO vtt_files (teletaskid,language,isOriginalLanguage,vtt_data, txt_data) VALUES (%s,%s,%s,%s,%s);",
+            (teletaskid,language,isOriginalLanguage,vtt_binary_data,txt_binary_data)
         )
         
         conn.commit()
@@ -119,13 +127,13 @@ def get_all_vtt_blobs():
         cur = conn.cursor()
 
         # --- Query all records ---
-        cur.execute("SELECT id, teletaskid, language,isOriginalLanguage, vtt_data FROM vtt_files ORDER BY id;")
+        cur.execute("SELECT id, teletaskid, language,isOriginalLanguage, vtt_data, txt_data FROM vtt_files ORDER BY id;")
         rows = cur.fetchall()
         
         print(f"\n=== Found {len(rows)} VTT file(s) in database ===\n")
         
         for row in rows:
-            record_id, teletaskid, language,isOriginalLanguage, vtt_data = row
+            record_id, teletaskid, language,isOriginalLanguage, vtt_data, txt_data = row
             print(f"--- Record ID: {record_id} ---")
             print(f"Teletask ID: {teletaskid}")
             print(f"Language: {language}")
@@ -138,6 +146,10 @@ def get_all_vtt_blobs():
                 vtt_bytes = bytes(vtt_data)
                 vtt_content = vtt_bytes.decode('utf-8')
                 print(vtt_content)
+
+                txt_bytes = bytes(txt_data)
+                txt_content = txt_bytes.decode('utf-8')
+                print(txt_content)
             except UnicodeDecodeError:
                 print("(Binary data could not be decoded as UTF-8)")
             print("-" * 50)
@@ -160,11 +172,12 @@ def databaseTestScript():
     with open("sample.vtt", "w") as f:
         f.write("WEBVTT\n\n00:00:01.000 --> 00:00:14.000\nHello world.")
     initDatabse()
-    save_vtt_as_blob("1","de")
+    save_vtt_as_blob("1","de",True)
 
     # Query and print all blobs
     get_all_vtt_blobs()
 
 if __name__ == '__main__':
+    save_vtt_as_blob("11410","de",True)
     get_all_vtt_blobs()
     #databaseTestScript()

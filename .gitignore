@@ -4,3 +4,4 @@ node_modules
 *.vtt
 *.pyc
 [0-9]*.txt
+site

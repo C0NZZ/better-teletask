@@ -66,7 +66,7 @@ async def checker_status():
 # 4. Add the main entry point to run the server
 if __name__ == "__main__":
     # This block allows you to run: python index.py
-    print("Starting minimal server at http://127.0.0.1:8000")
+    print("Starting minimal server at http://0.0.0.0:8000")
     print("Try visiting http://127.0.0.1:8000/ping or http://127.0.0.1:8000/1")
-    uvicorn.run(app, host="127.0.0.1", port=8000)
+    uvicorn.run(app, host="0.0.0.0", port=8000)
 

@@ -3,6 +3,7 @@ services:
     build: ./whisper
     # ports:
     #   - "8000:8000"
+    gpus: all
   
   database:
     image: postgres:18-alpine

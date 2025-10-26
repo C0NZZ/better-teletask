@@ -17,7 +17,7 @@
 
   "content_scripts": [
     {
-      "matches": ["*://www.tele-task.de/*", "*://localhost/*", "*://127.0.0.1/*"],
+      "matches": ["*://www.tele-task.de/lecture/video/*"],
       "js": ["subtitles.js"]
     }
   ]

@@ -103,7 +103,7 @@ def fetch_and_convert(id):
         print('Attempting direct conversion from URL to MP3...')
         print(baseoutput+id+".mp3")
         convert_to_mp3(mp4url, baseoutput+id+".mp3")
-        print('Created'+baseoutput+id+".mp3")
+        print('Created '+baseoutput+id+".mp3")
         log(f"✅ ID: {id} Direct conversion from URL to MP3 succeeded.")
     except Exception:
         log(f"❌ ID: {id} Direct conversion failed, downloading then converting.")

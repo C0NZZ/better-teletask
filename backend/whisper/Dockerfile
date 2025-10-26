@@ -10,7 +10,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends ffmpeg
 
 RUN pip install -r requirements.txt
 
-RUN export LD_LIBRARY_PATH=/usr/local/lib/python3.13/site-packages/nvidia/cudnn/lib/
+ENV LD_LIBRARY_PATH="/usr/local/lib/python3.13/site-packages/nvidia/cudnn/lib/"
 
 RUN mkdir input output
 

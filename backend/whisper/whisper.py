@@ -10,7 +10,7 @@ output_path = os.path.join(script_dir, "output/")
 compute_type = "float16"
 device="cuda"
 
-model = whisperx.load_model("small", device=device, compute_type=compute_type)
+model = whisperx.load_model("turbo", device=device, compute_type=compute_type)
 
 def transcribeVideoByID(id): 
     file_path = os.path.join(input_path, id + ".mp3")

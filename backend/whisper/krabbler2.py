@@ -106,15 +106,15 @@ def fetch_and_convert(id):
         print('Created'+baseoutput+id+".mp3")
         log(f"✅ ID: {id} Direct conversion from URL to MP3 succeeded.")
     except Exception:
-        log(f"❌ ID: {id} Direct conversion failed, downloading then converting {e}.")
+        log(f"❌ ID: {id} Direct conversion failed, downloading then converting.")
         print('Direct conversion failed, downloading then converting...')
         try:
             downloadMP4(mp4url)
             convert_to_mp3(baseoutput+id+".mp4", baseoutput+id+".mp3")
             print('Created'+baseoutput+id+".mp3")
         except Exception:
-            log(f"❌ ID: {id} ERROR ABORTING converting downloaded MP4 to MP3: {e}")
-            print('ERROR converting downloaded MP4 to MP3:', e)
+            log(f"❌ ID: {id} ERROR ABORTING converting downloaded MP4 to MP3:")
+            print('ERROR converting downloaded MP4 to MP3:')
             return -1
 
 

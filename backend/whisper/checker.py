@@ -35,7 +35,7 @@ def getLatestTeletaskID():
 
     except (Exception, psycopg2.Error) as error:
         print("Error while querying PostgreSQL", error)
-        return 11400;
+        return "11400";
     finally:
         if conn:
             cur.close()

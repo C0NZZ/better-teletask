@@ -1,6 +1,7 @@
 import psycopg2
 import os
 from dotenv import load_dotenv, find_dotenv
+from logger import log
 
 # Load the .env file
 load_dotenv(find_dotenv())
@@ -69,6 +70,14 @@ def save_vtt_as_blob(teletaskid, language, isOriginalLanguage):
     conn = None
     file_path = os.path.join(input_path, teletaskid+".vtt")
     file_path_txt = os.path.join(input_path, teletaskid+".txt")
+    if not os.path.exists(file_path):
+        log(f"❌ ID: {teletaskid} ERROR: VTT file not found, cant put in database: {file_path}")
+        print(f"❌ ID: {teletaskid} ERROR: VTT file not found, cant put in database: {file_path}")
+        return -1
+    if not os.path.exists(file_path_txt):
+        log(f"❌ ID: {teletaskid} ERROR: TXT file not found, cant put in database: {file_path_txt}")
+        print(f"❌ ID: {teletaskid} ERROR: TXT file not found, cant put in database: {file_path_txt}")
+        return -1
     print(file_path)
     try:
         # --- Connect to PostgreSQL ---
@@ -178,6 +187,8 @@ def databaseTestScript():
     get_all_vtt_blobs()
 
 if __name__ == '__main__':
-    save_vtt_as_blob("11410","de",True)
-    get_all_vtt_blobs()
+    succ = save_vtt_as_blob("11413","de",True)
+    if( succ == -1):
+        print("Could not save to database")
+    #get_all_vtt_blobs()
     #databaseTestScript()

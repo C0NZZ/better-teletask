@@ -5,7 +5,7 @@ from dotenv import load_dotenv, find_dotenv
 from krabbler2 import fetch_and_convert
 from whisper import transcribeVideoByID
 from database import save_vtt_as_blob
-
+from logger import log, logAborts
 # Load the .env file
 load_dotenv(find_dotenv())
 
@@ -50,19 +50,30 @@ def checkVideoByID(id):
         response = requests.get(url)
         if response.status_code == 404:
             print("404, not available yet")
+            log(f"❌ ID: {id} 404, teletask video not available yet")
             return("404")
         elif response.status_code == 401:
             print("not allowed, please use a session cookie, trying next")
-            return("200")
+            log(f"❌ ID: {id} 401, not allowed, please use a session cookie, skipping and trying next id")
+            return("401")
         elif response.ok:
             print("exists, fetching mp4")
+            log(f"✅ ID: {id} teletask video exists, fetching audio")
             # run download code
-            fetch_and_convert(id)
+            succ = fetch_and_convert(id)
+            if(succ == -1):
+                return("skip")
             # transcribe 
-            language, isOriginalLanguage = transcribeVideoByID(id)
+            language, isOriginalLanguage, succ = transcribeVideoByID(id)
+            if(succ == -1):
+                return("skip")
             # save to database
-            save_vtt_as_blob(id,language,isOriginalLanguage)
+            succ = save_vtt_as_blob(id,language,isOriginalLanguage)
+            if(succ == -1):
+                return("skip")
             # id should increase by 1
+            log(f"✅ ID: {id} processing complete, moving to next id")
+            logAborts("✅ ID: {id} processing complete, moving to next id")
             return("200")
 
         else:
@@ -102,17 +113,18 @@ url = "https://www.tele-task.de/lecture/video/"
 
 
 def checkerLoop():
-    latestID = getLatestTeletaskID()
-    #latestID = "11401"
+    #latestID = getLatestTeletaskID()
+    latestID = "11401"
+
     status = checkVideoByID(str(int(latestID)+1))
-    while(status == "200"):
+    while(status == "200" or status == "401" or status == "skip"):
         temp = int(latestID) + 1
         latestID=str(temp)
         status = checkVideoByID(latestID)
 
 def checkerTestLoop():
-    latestID = getLatestTeletaskID()
-    status = checkVideoByIDTest(str(int(latestID)+1))
+    latestID = (str(int(getLatestTeletaskID())+1))
+    status = checkVideoByIDTest(latestID)
     while(status == "200"):
         temp = int(latestID) + 1
         latestID=str(temp)

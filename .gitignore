@@ -3,4 +3,4 @@ node_modules
 *.mp3
 *.vtt
 *.pyc
-*.txt
+[0-9]*.txt

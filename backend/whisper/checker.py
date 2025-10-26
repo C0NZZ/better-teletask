@@ -113,10 +113,10 @@ url = "https://www.tele-task.de/lecture/video/"
 
 
 def checkerLoop():
-    #latestID = getLatestTeletaskID()
-    latestID = "11401"
+    latestID = getLatestTeletaskID()+1
+    #latestID = "11401"
 
-    status = checkVideoByID(str(int(latestID)+1))
+    status = checkVideoByID(str(int(latestID)))
     while(status == "200" or status == "401" or status == "skip"):
         temp = int(latestID) + 1
         latestID=str(temp)

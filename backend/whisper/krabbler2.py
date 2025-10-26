@@ -11,9 +11,12 @@ baseoutput =  os.path.join(script_dir, "input/")
 baseurl = "https://www.tele-task.de/lecture/video/" 
 url = "https://www.tele-task.de/lecture/video/11420/"
 
-def fetchMP4(id):
-    url = baseurl+id
-    response = requests.get(url)
+def fetchMP4(id, cookie):
+
+    cookies = {"username": cookie}
+    url = baseurl + id
+
+    response = requests.get(url, cookies=cookies)
     response.raise_for_status()
 
     soup = BeautifulSoup(response.text, "html.parser")
@@ -90,9 +93,9 @@ def convert_to_mp3(source, out_mp3):
         raise
 
 
-def fetch_and_convert(id):
+def fetch_and_convert(id, cookie):
     # Find MP4 URL
-    mp4url = fetchMP4(id)
+    mp4url = fetchMP4(id, cookie)
     if not mp4url:
         print('No MP4 URL found')
         log(f"❌ ID: {id} ERROR: No MP4 URL found for teletask video.")

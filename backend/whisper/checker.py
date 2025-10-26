@@ -17,6 +17,7 @@ DB_USER = os.environ.get("POSTGRES_USER")
 DB_PASS = os.environ.get("POSTGRES_PASSWORD")
 DB_HOST = os.environ.get("DB_HOST")
 DB_PORT = os.environ.get("DB_PORT")
+USERNAME_COOKIE = os.environ.get("USERNAME_COOKIE")
 
 def getLatestTeletaskID():
     conn = None
@@ -47,7 +48,9 @@ def checkVideoByID(id):
     url = baseurl+id
     print("requesting "+url)
     try:
-        response = requests.get(url)
+        cookies = {"username": USERNAME_COOKIE}
+        url = baseurl + id
+        response = requests.get(url,cookies=cookies)
         if response.status_code == 404:
             print("404, not available yet")
             log(f"❌ ID: {id} 404, teletask video not available yet")
@@ -60,7 +63,7 @@ def checkVideoByID(id):
             print("exists, fetching mp4")
             log(f"✅ ID: {id} teletask video exists, fetching audio")
             # run download code
-            succ = fetch_and_convert(id)
+            succ = fetch_and_convert(id, USERNAME_COOKIE)
             if(succ == -1):
                 return("skip")
             # transcribe 
@@ -113,7 +116,7 @@ url = "https://www.tele-task.de/lecture/video/"
 
 
 def checkerLoop():
-    latestID = getLatestTeletaskID()+1
+    latestID = str(int(getLatestTeletaskID())+1)
     #latestID = "11401"
 
     status = checkVideoByID(str(int(latestID)))

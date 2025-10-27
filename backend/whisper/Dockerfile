@@ -4,8 +4,6 @@ WORKDIR /whisper
 
 COPY checker.py database.py index.py krabbler2.py whisper.py requirements.txt logger.py ./
 
-RUN echo -e 'POSTGRES_DB = "postgres"\nPOSTGRES_USER = "postgres"\nPOSTGRES_PASSWORD = "password"\nDB_HOST = "database"\nDB_PORT = "5432"\nRECORDING_SOURCE_FOLDER = ""\nVTT_DEST_FOLDER = ""' > .env
-
 RUN apt-get update && apt-get install -y --no-install-recommends ffmpeg
 
 RUN pip install -r requirements.txt

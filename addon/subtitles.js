@@ -6,11 +6,30 @@
     let last = segments.length ? segments[segments.length - 1] : '';
     last = decodeURIComponent(last || 'index');
     last = encodeURIComponent(last);
-    const suburl = `https://test.com/btt/${last}/de`
+    const urls = [
+      {
+        lang: 'orig',
+        name: 'Original',
+        url: `https://test.com/btt/${last}`,
+        localurl: ''
+      },
+      {
+        lang: 'de',
+        name: 'Deutsch',
+        url: `https://test.com/btt/${last}/de`,
+        localurl: ''
+      },
+      {
+        lang: 'en',
+        name: 'English',
+        url: `https://test.com/btt/${last}/en`,
+        localurl: ''
+      }
+    ]
 
   async function fetchSubtitle(url) {
     try {
-      const response = await fetch(suburl);
+      const response = await fetch(url);
       if (!response.ok) {
         throw new Error(`Failed to fetch subtitle: ${response.statusText}`);
       }
@@ -21,21 +40,28 @@
     }
   }
 
-  const subtitleText = await fetchSubtitle(suburl);
-  const BLOB = new Blob([subtitleText], { type: 'text/vtt'});
-  const LOCALURL = URL.createObjectURL(BLOB)
-
+  for (const language of urls) {
+    const subtitleText = await fetchSubtitle(language.url);
+    if (typeof(subtitleText) === 'string') {
+      const BLOB = new Blob([subtitleText], { type: 'text/vtt'});
+      language.localurl = URL.createObjectURL(BLOB)
+    } else console.warn(`[btt-subtitles] no subtitle found for ${language.name} language`)
+  }
 
   const CAPTIONS_TO_ADD = (() => {
-    return [
-      {
-        language: 'de',
-        name: 'Deutsch',
-        url: `${LOCALURL}`,
-        type: 'default'
-      }
-    ];
+    return urls
+      .filter(u => u.localurl.length > 0)
+      .map(u => ({
+        language: u.lang,
+        name: u.name,
+        url: u.localurl,
+        ...(u.lang === 'orig' ? { type: 'default' } : { type: 'auto-generated' })
+      }));
   })();
+  if (CAPTIONS_TO_ADD.length === 0) {
+    console.warn('[btt-subtitles] no subtitles available, aborting subtitle injection')
+    return
+  }
 
   function decodeHtmlEntities(str) {
     if (!str || typeof str !== 'string') return str;

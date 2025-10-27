@@ -1,5 +1,6 @@
 (async function addSubtitles() {
   const PLAYER_ID = 'player';
+  const BASEURL = 'https://test.com/btt'
 
   const path = (typeof window !== 'undefined' && window.location && window.location.pathname) ? window.location.pathname : '';
     const segments = path.split('/').filter(Boolean);
@@ -10,19 +11,19 @@
       {
         lang: 'orig',
         name: 'Original',
-        url: `https://test.com/btt/${last}`,
+        url: `${BASEURL}/${last}`,
         localurl: ''
       },
       {
         lang: 'de',
         name: 'Deutsch',
-        url: `https://test.com/btt/${last}/de`,
+        url: `${BASEURL}/${last}/de`,
         localurl: ''
       },
       {
         lang: 'en',
         name: 'English',
-        url: `https://test.com/btt/${last}/en`,
+        url: `${BASEURL}/${last}/en`,
         localurl: ''
       }
     ]
@@ -119,7 +120,7 @@
     const serialized = JSON.stringify(config);
     playerEl.setAttribute('configuration', serialized);
     // playerEl.setAttribute('configuration', serialized.replace(/"/g, '&quot;'));
-    console.info('[btt-subtitles] configuration attribute updated successfully');
+    console.info('[btt-subtitles] subtitles injected successfully');
   } catch (e) {
     console.error('[btt-subtitles] failed to serialize updated configuration', e);
   }

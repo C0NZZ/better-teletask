@@ -31,12 +31,11 @@ def getLatestTeletaskID():
         # --- Query all records ---
         cur.execute("SELECT MAX(teletaskid) FROM vtt_files;")
         max_id = cur.fetchone()[0]
-        print(f"Max teletaskid: {max_id}")
+        print(f"Highest Teletask ID in available in database: {max_id}")
         return max_id
 
     except (Exception, psycopg2.Error) as error:
         print("Error while querying PostgreSQL", error)
-        return "11400";
     finally:
         if conn:
             cur.close()

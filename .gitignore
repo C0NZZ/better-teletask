@@ -5,3 +5,4 @@ node_modules
 *.pyc
 [0-9]*.txt
 site
+backend/whisper/logs

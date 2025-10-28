@@ -18,7 +18,7 @@
   "content_scripts": [
     {
       "matches": ["*://www.tele-task.de/lecture/video/*"],
-      "js": ["subtitles.js"]
+      "js": ["subtitles.js", "tweaks.js"]
     }
   ]
 }

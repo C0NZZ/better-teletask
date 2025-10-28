@@ -1,0 +1,359 @@
+import psycopg2
+from psycopg2 import extensions
+import os
+from dotenv import load_dotenv, find_dotenv
+from logger import log
+
+load_dotenv(find_dotenv())
+
+OUTPUTFOLDER = os.environ.get("VTT_DEST_FOLDER")
+print(OUTPUTFOLDER)
+
+script_dir = os.path.dirname(os.path.abspath(__file__))
+input_path = os.path.join(script_dir, OUTPUTFOLDER)
+
+# --- Database Connection Details ---
+DB_NAME = os.environ.get("POSTGRES_DB")
+DB_USER = os.environ.get("POSTGRES_USER")
+DB_PASS = os.environ.get("POSTGRES_PASSWORD")
+DB_HOST = os.environ.get("DB_HOST")
+DB_PORT = os.environ.get("DB_PORT")
+
+
+def initDatabse():
+    try:
+        # --- Connect to PostgreSQL ---
+        conn = psycopg2.connect(
+            dbname=DB_NAME, user=DB_USER, password=DB_PASS, host=DB_HOST, port=DB_PORT
+        )
+        cur = conn.cursor()
+
+        print("connected")
+        conn.set_isolation_level(extensions.ISOLATION_LEVEL_AUTOCOMMIT)
+        # --- Create Table (if it doesn't exist) ---
+        cur.execute(
+            """
+            CREATE TABLE IF NOT EXISTS lecture_data (
+                teletaskid INTEGER PRIMARY KEY,
+                originalLang VARCHAR(50),
+                date TIMESTAMP,
+                lecturer VARCHAR(255),
+                semester VARCHAR(50),
+                duration INTERVAL,
+                title VARCHAR(255),
+                video_mp4 VARCHAR(255),
+                desktop_mp4 VARCHAR(255),
+                podcast_mp4 VARCHAR(255)
+            );
+            CREATE TABLE IF NOT EXISTS vtt_files (
+                id SERIAL PRIMARY KEY,
+                teletaskid INTEGER NOT NULL,
+                language VARCHAR(50) NOT NULL,
+                isOriginalLang BOOLEAN NOT NULL,
+                vtt_data BYTEA NOT NULL,
+                txt_data BYTEA NOT NULL,
+                asr_model VARCHAR(255),
+                creation_date TIMESTAMP DEFAULT NOW()
+            );
+            CREATE TABLE IF NOT EXISTS api_keys (
+                id SERIAL PRIMARY KEY,
+                api_key VARCHAR(255) UNIQUE NOT NULL,
+                person_name VARCHAR(255),
+                person_email VARCHAR(255),
+                creation_date TIMESTAMP DEFAULT NOW(),
+                expiration_date TIMESTAMP
+            );
+            """)
+
+    except (Exception, psycopg2.Error) as error:
+        print("Error while connecting to PostgreSQL", error)
+    finally:
+        if conn:
+            cur.close()
+            conn.close()
+
+
+def clearDatabase():
+    try:
+        # --- Connect to PostgreSQL ---
+        conn = psycopg2.connect(
+            dbname=DB_NAME, user=DB_USER, password=DB_PASS, host=DB_HOST, port=DB_PORT
+        )
+        conn.autocommit = False
+        cur = conn.cursor()
+
+        print("connected")
+
+        cur.execute(
+            """
+            DROP TABLE IF EXISTS "vtt_files";
+            DROP TABLE IF EXISTS "lecture_data";
+            DROP TABLE IF EXISTS "api_keys";
+        """
+        )
+        conn.commit()
+
+    except (Exception, psycopg2.Error) as error:
+        print("Error while connecting to PostgreSQL", error)
+    finally:
+        if conn:
+            cur.close()
+            conn.close()
+
+
+def save_vtt_as_blob(teletaskid, language, isOriginalLang):
+    conn = None
+    file_path = os.path.join(input_path, str(teletaskid) + ".vtt")
+    file_path_txt = os.path.join(input_path, str(teletaskid) + ".txt")
+    if not os.path.exists(file_path):
+        log(
+            f"❌ ID: {teletaskid} ERROR: VTT file not found, cant put in database: {file_path}"
+        )
+        print(
+            f"❌ ID: {teletaskid} ERROR: VTT file not found, cant put in database: {file_path}"
+        )
+        return -1
+    if not os.path.exists(file_path_txt):
+        log(
+            f"❌ ID: {teletaskid} ERROR: TXT file not found, cant put in database: {file_path_txt}"
+        )
+        print(
+            f"❌ ID: {teletaskid} ERROR: TXT file not found, cant put in database: {file_path_txt}"
+        )
+        return -1
+    print(file_path)
+    try:
+        # --- Connect to PostgreSQL ---
+        conn = psycopg2.connect(
+            dbname=DB_NAME, user=DB_USER, password=DB_PASS, host=DB_HOST, port=DB_PORT
+        )
+        cur = conn.cursor()
+
+        print(f"Teletask ID: {teletaskid}")
+        print(f"Language: {language}")
+        print(f"Is Original Language: {isOriginalLang}")
+
+        # --- Read file in binary mode and insert ---
+        with open(file_path, "rb") as f:
+            vtt_binary_data = f.read()
+
+        with open(file_path_txt, "rb") as f:
+            txt_binary_data = f.read()
+
+        cur.execute(
+            "INSERT INTO vtt_files (teletaskid,language,isOriginalLang,vtt_data, txt_data) VALUES (%s,%s,%s,%s,%s);",
+            (
+                teletaskid,
+                language,
+                isOriginalLang,
+                vtt_binary_data,
+                txt_binary_data,
+            ),
+        )
+
+        conn.commit()
+        print(f"Successfully saved '{file_path}' as a BLOB.")
+
+    except (Exception, psycopg2.Error) as error:
+        print("Error while connecting to PostgreSQL", error)
+    finally:
+        if conn:
+            cur.close()
+            conn.close()
+
+
+def getHighestTeletaskID():
+    conn = None
+    try:
+        # --- Connect to PostgreSQL ---
+        conn = psycopg2.connect(
+            dbname=DB_NAME, user=DB_USER, password=DB_PASS, host=DB_HOST, port=DB_PORT
+        )
+        cur = conn.cursor()
+
+        # --- Query all records ---
+        cur.execute("SELECT MAX(teletaskid) FROM vtt_files;")
+        max_id = cur.fetchone()[0]
+        print(f"Highest Teletask ID in available in database: {max_id}")
+        return max_id
+
+    except (Exception, psycopg2.Error) as error:
+        print("Error while querying PostgreSQL", error)
+    finally:
+        if conn:
+            cur.close()
+            conn.close()
+
+def getSmallestTeletaskID():
+    conn = None
+    try:
+        # --- Connect to PostgreSQL ---
+        conn = psycopg2.connect(
+            dbname=DB_NAME, user=DB_USER, password=DB_PASS, host=DB_HOST, port=DB_PORT
+        )
+        cur = conn.cursor()
+
+        # --- Query all records ---
+        cur.execute("SELECT MIN(teletaskid) FROM vtt_files;")
+        max_id = cur.fetchone()[0]
+        print(f"Smallest Teletask ID in available in database: {max_id}")
+        return max_id
+
+    except (Exception, psycopg2.Error) as error:
+        print("Error while querying PostgreSQL", error)
+    finally:
+        if conn:
+            cur.close()
+            conn.close()
+
+def get_missing_inbetween_ids():
+    conn = None
+    try:
+        # --- Connect to PostgreSQL ---
+        conn = psycopg2.connect(
+            dbname=DB_NAME, user=DB_USER, password=DB_PASS, host=DB_HOST, port=DB_PORT
+        )
+        cur = conn.cursor()
+
+        # --- Query all records ---
+        cur.execute(""" 
+            WITH bounds AS (
+            SELECT 
+                MIN(teletaskid) AS min_id,
+                MAX(teletaskid) AS max_id
+            FROM vtt_files
+            ),
+            all_ids AS (
+                SELECT generate_series(
+                    (SELECT min_id FROM bounds),
+                    (SELECT max_id FROM bounds)
+                ) AS teletaskid
+            )
+            SELECT all_ids.teletaskid
+            FROM all_ids
+            LEFT JOIN vtt_files vf 
+                ON all_ids.teletaskid = vf.teletaskid
+            WHERE vf.teletaskid IS NULL
+            ORDER BY all_ids.teletaskid;
+        """)
+        rows = cur.fetchall()
+        ids = [row[0] for row in rows]  # extract the first element from each tuple
+        print(ids)
+
+
+    except (Exception, psycopg2.Error) as error:
+        print("Error while querying PostgreSQL", error)
+    finally:
+        if conn:
+            cur.close()
+            conn.close()
+    
+def get_missing_translations():
+    conn = None
+    try:
+        # --- Connect to PostgreSQL ---
+        conn = psycopg2.connect(
+            dbname=DB_NAME, user=DB_USER, password=DB_PASS, host=DB_HOST, port=DB_PORT
+        )
+        cur = conn.cursor()
+
+        # --- Query all records ---
+        cur.execute(""" 
+            WITH all_ids AS( SELECT DISTINCT teletaskid FROM vtt_files )
+            SELECT teletaskid, language FROM vtt_files
+            WHERE isOriginalLang = False
+            ORDER BY teletaskid DESC;
+        """)
+        rows = cur.fetchall()
+        id_lang_pairs = [(row[0],row[1]) for row in rows]  # extract the first element from each tuple
+        print(id_lang_pairs)
+
+
+    except (Exception, psycopg2.Error) as error:
+        print("Error while querying PostgreSQL", error)
+    finally:
+        if conn:
+            cur.close()
+            conn.close()
+
+def get_all_vtt_blobs():
+    conn = None
+    try:
+        # --- Connect to PostgreSQL ---
+        conn = psycopg2.connect(
+            dbname=DB_NAME, user=DB_USER, password=DB_PASS, host=DB_HOST, port=DB_PORT
+        )
+        cur = conn.cursor()
+
+        # --- Query all records ---
+        cur.execute(
+            "SELECT id, teletaskid, language,isOriginalLang, vtt_data, txt_data FROM vtt_files ORDER BY id;"
+        )
+        rows = cur.fetchall()
+
+        print(f"\n=== Found {len(rows)} VTT file(s) in database ===\n")
+
+        for row in rows:
+            record_id, teletaskid, language, isOriginalLang, vtt_data, txt_data = (
+                row
+            )
+            print(f"--- Record ID: {record_id} ---")
+            print(f"Teletask ID: {teletaskid}")
+            print(f"Language: {language}")
+            print(f"Is Original Language: {isOriginalLang}")
+            print(f"VTT Data (size): {len(vtt_data)} bytes")
+            print(f"VTT Content:")
+            print("-" * 50)
+            # Convert memoryview to bytes, then decode to string for display
+            
+            try:
+                vtt_bytes = bytes(vtt_data)
+                vtt_content = vtt_bytes.decode("utf-8")
+                print(vtt_content)
+
+                txt_bytes = bytes(txt_data)
+                txt_content = txt_bytes.decode("utf-8")
+                print(txt_content)
+            except UnicodeDecodeError:
+                print("(Binary data could not be decoded as UTF-8)")
+            print("-" * 50)
+            print()
+
+        return rows
+
+    except (Exception, psycopg2.Error) as error:
+        print("Error while querying PostgreSQL", error)
+        return []
+    finally:
+        if conn:
+            cur.close()
+            conn.close()
+
+
+def databaseTestScript():
+    # --- Example Usage ---
+    # Create a dummy file first
+    with open("sample.vtt", "w") as f:
+        f.write("WEBVTT\n\n00:00:01.000 --> 00:00:14.000\nHello world.")
+    initDatabse()
+    save_vtt_as_blob("1", "de", True)
+
+    # Query and print all blobs
+    get_all_vtt_blobs()
+
+
+if __name__ == "__main__":
+    clearDatabase()
+    initDatabse()
+    save_vtt_as_blob(11408, "de", True)
+    save_vtt_as_blob(11408, "en", False)
+    save_vtt_as_blob(11402, "de", True)
+    save_vtt_as_blob(11402, "en", False)
+    #get_all_vtt_blobs()
+    # get_all_vtt_blobs()
+    # databaseTestScript()
+    #getHighestTeletaskID()
+    #getSmallestTeletaskID()
+    #get_missing_inbetween_ids()
+    get_missing_translations()
+

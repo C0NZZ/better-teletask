@@ -3,6 +3,7 @@ services:
     build: ./whisper
     volumes:
       - ./.env:/whisper/.env:ro
+      - "models:/root/.cache/huggingface"
     # ports:
     #   - "8000:8000"
     gpus: all
@@ -23,4 +24,5 @@ services:
     - "8080:8080"
 
 volumes:
+  models:
   pgdata:

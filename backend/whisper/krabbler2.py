@@ -31,7 +31,7 @@ def fetchMP4(id, cookie):
                 sd_urls = [stream.get("sd") for stream in streams if "sd" in stream]
                 print("SD URLs:")
                 for url in sd_urls:
-                    if url.endswith("video.mp4"):
+                    if url.endswith("video.mp4") or url.endswith("CameraMicrophone.mp4"):
                         print(url)
                         return url
                     

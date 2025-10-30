@@ -12,7 +12,7 @@ device="cuda"
 
 model = whisperx.load_model("turbo", device=device, compute_type=compute_type)
 
-def transcribeVideoByID(id): 
+def transcribeVideoByID(id, transcribeLanguage): 
     file_path = os.path.join(input_path, id + ".mp3")
     try:
         # fail early if input audio doesn't exist
@@ -24,7 +24,10 @@ def transcribeVideoByID(id):
 
         audio = whisperx.load_audio(file_path)
 
-        result = model.transcribe(audio)
+        if transcribeLanguage == 'orig':
+            result = model.transcribe(audio)
+        else:
+            result = model.transcribe(audio, task="translate")
         print(result["segments"])
 
         # Save the language before alignment
@@ -56,11 +59,13 @@ def transcribeVideoByID(id):
             file_path,
             {"max_line_width": None, "max_line_count": None, "highlight_words": False},
         )
-
-        return language, True, 0
+        if transcribeLanguage == 'orig':
+            return language, True, 0
+        else:
+            return language, False, 0
     except Exception as e:
         # log and return -1 to signal failure
-        log(f"❌ ID: {id} ERROR: {e}")
+        log(f"❌ ID: {id} LANG: {transcribeLanguage} ERROR: {e}")
         print(f"❌ ID: {id} ERROR: {e}")
         return language, True, -1
 

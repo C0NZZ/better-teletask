@@ -9,7 +9,7 @@ from logger import log, logAborts
 # Load the .env file
 load_dotenv(find_dotenv())
 
-
+TRANSCRIBE_LANGS = os.environ.get("TRANSCRIBE_LANGUAGES").split(',')
 
 # --- Database Connection Details ---
 DB_NAME = os.environ.get("POSTGRES_DB")
@@ -66,13 +66,14 @@ def checkVideoByID(id):
             if(succ == -1):
                 return("skip")
             # transcribe 
-            language, isOriginalLanguage, succ = transcribeVideoByID(id)
-            if(succ == -1):
-                return("skip")
-            # save to database
-            succ = save_vtt_as_blob(id,language,isOriginalLanguage)
-            if(succ == -1):
-                return("skip")
+            for transcribeLanguage in TRANSCRIBE_LANGS:
+                language, isOriginalLanguage, succ = transcribeVideoByID(id, transcribeLanguage)
+                if(succ == -1):
+                    return("skip")
+                # save to database
+                succ = save_vtt_as_blob(id,language,isOriginalLanguage)
+                if(succ == -1):
+                    return("skip")
             # id should increase by 1
             log(f"✅ ID: {id} processing complete, moving to next id")
             logAborts("✅ ID: {id} processing complete, moving to next id")

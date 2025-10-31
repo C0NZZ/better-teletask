@@ -2,6 +2,12 @@
   const PLAYER_ID = 'player';
   const BASEURL = 'https://test.com/btt'
 
+  const { apiKey } = await browser.storage.local.get('apiKey');
+  if (!apiKey) {
+    console.warn("[btt-subtitles] no API key set");
+    return;
+  }
+
   const path = (typeof window !== 'undefined' && window.location && window.location.pathname) ? window.location.pathname : '';
     const segments = path.split('/').filter(Boolean);
     let last = segments.length ? segments[segments.length - 1] : '';
@@ -13,24 +19,14 @@
         name: 'Original',
         url: `${BASEURL}/${last}`,
         localurl: ''
-      },
-      {
-        lang: 'de',
-        name: 'Deutsch',
-        url: `${BASEURL}/${last}/de`,
-        localurl: ''
-      },
-      {
-        lang: 'en',
-        name: 'English',
-        url: `${BASEURL}/${last}/en`,
-        localurl: ''
       }
     ]
 
   async function fetchSubtitle(url) {
     try {
-      const response = await fetch(url);
+      const response = await fetch(url, {
+        headers: { "Authorization": `Bearer ${apiKey}` }
+      });
       if (!response.ok) {
         throw new Error(`Failed to fetch subtitle: ${response.statusText}`);
       }

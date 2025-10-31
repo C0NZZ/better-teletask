@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Better Tele-Task</title>
+    <link rel="stylesheet" href="style.css">
+  </head>
+
+  <body>
+    <div class="card">
+      <header class="card-header" aria-hidden="true">
+        <img src="logo.png" height="24px">
+        <h1>Better Tele-Task</h1>
+      </header>
+
+      <main class="card-body">
+        <p class="lead">Please enter your API key.</p>
+
+        <label for="apiKey" class="visually-hidden">Tele-Task API key</label>
+        <div class="input-group">
+          <input type="text" id="apiKey" placeholder="Tele-Task API key" autocomplete="off" required/>
+          <button id="save" class="btn-primary" aria-label="Speichern">Save</button>
+        </div>
+        <p id="status" class="status" role="status" aria-live="polite"></p>
+      </main>
+
+      <footer class="card-footer">
+        <small>The key will only be stored in your browser.</small>
+      </footer>
+    </div>
+
+    <script src="popup.js"></script>
+  </body>
+</html>

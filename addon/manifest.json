@@ -8,17 +8,25 @@
   "homepage_url": "https://github.com/C0NZZ/better-teletask",
 
   "icons": {
+    "96": "icons/96.png",
     "48": "icons/48.png"
   },
 
   "permissions": [
-    "https://test.com/*"
+    "https://test.com/*",
+    "storage"
   ],
+
+  "browser_action": {
+    "default_icon": "icons/32.png",
+    "default_title": "Better Tele-Task",
+    "default_popup": "popup/popup.html"
+  },
 
   "content_scripts": [
     {
       "matches": ["*://www.tele-task.de/lecture/video/*"],
-      "js": ["subtitles.js", "tweaks.js"]
+      "js": ["tweaks.js", "subtitles.js"]
     }
   ]
 }

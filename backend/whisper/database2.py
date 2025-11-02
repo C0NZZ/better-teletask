@@ -61,8 +61,14 @@ def initDatabse():
                 person_name VARCHAR(255),
                 person_email VARCHAR(255),
                 creation_date TIMESTAMP DEFAULT NOW(),
-                expiration_date TIMESTAMP
+                expiration_date TIMESTAMP,
+                status VARCHAR(255) DEFAULT 'active'
             );
+            CREATE TABLE IF NOT EXISTS blacklist_ids(
+                teletaskid INTEGER PRIMARY KEY,
+                reason VARCHAR(255),
+                times_tried INTEGER DEFAULT 1
+            )
             """)
 
     except (Exception, psycopg2.Error) as error:
@@ -89,6 +95,7 @@ def clearDatabase():
             DROP TABLE IF EXISTS "vtt_files";
             DROP TABLE IF EXISTS "lecture_data";
             DROP TABLE IF EXISTS "api_keys";
+            DROP TABLE IF EXISTS "blacklist_ids";
         """
         )
         conn.commit()
@@ -100,6 +107,31 @@ def clearDatabase():
             cur.close()
             conn.close()
 
+def add_id_to_blacklist(teletaskid, reason):
+    conn = None
+    try:
+        # --- Connect to PostgreSQL ---
+        conn = psycopg2.connect(
+            dbname=DB_NAME, user=DB_USER, password=DB_PASS, host=DB_HOST, port=DB_PORT
+        )
+        cur = conn.cursor()
+
+        print(f"Adding Teletask ID {teletaskid} to blacklist for reason: {reason}")
+
+        cur.execute(
+            "INSERT INTO blacklist_ids (teletaskid, reason) VALUES (%s, %s) ON CONFLICT (teletaskid) DO UPDATE SET times_tried = blacklist_ids.times_tried + 1, reason = EXCLUDED.reason;",
+            (teletaskid, reason),
+        )
+
+        conn.commit()
+        print(f"Successfully added Teletask ID {teletaskid} to blacklist.")
+
+    except (Exception, psycopg2.Error) as error:
+        print("Error while connecting to PostgreSQL", error)
+    finally:
+        if conn:
+            cur.close()
+            conn.close()
 
 def save_vtt_as_blob(teletaskid, language, isOriginalLang):
     conn = None
@@ -239,6 +271,7 @@ def get_missing_inbetween_ids():
         rows = cur.fetchall()
         ids = [row[0] for row in rows]  # extract the first element from each tuple
         print(ids)
+        return ids
 
 
     except (Exception, psycopg2.Error) as error:
@@ -248,6 +281,39 @@ def get_missing_inbetween_ids():
             cur.close()
             conn.close()
     
+def get_blacklisted_ids(): # TODO
+     conn = None
+     try:
+          # --- Connect to PostgreSQL ---
+          conn = psycopg2.connect(
+                dbname=DB_NAME, user=DB_USER, password=DB_PASS, host=DB_HOST, port=DB_PORT
+          )
+          cur = conn.cursor()
+    
+          # --- Query all records ---
+          cur.execute("SELECT teletaskid FROM blacklist_ids;")
+          rows = cur.fetchall()
+          ids = [row[0] for row in rows]  # extract the first element from each tuple
+          print(ids)
+          return ids
+    
+     except (Exception, psycopg2.Error) as error:
+          print("Error while querying PostgreSQL", error)
+          return []
+     finally:
+          if conn:
+                cur.close()
+                conn.close()    
+    
+def get_missing_available_inbetween_ids():
+    initial_ids = get_missing_inbetween_ids()
+    print(initial_ids)
+    blacklisted_ids = get_blacklisted_ids()
+    print(blacklisted_ids)
+    print(list(set(initial_ids) - set(blacklisted_ids)))
+    return list(set(initial_ids) - set(blacklisted_ids))
+
+
 def get_missing_translations():
     conn = None
     try:
@@ -329,6 +395,30 @@ def get_all_vtt_blobs():
             cur.close()
             conn.close()
 
+def original_language_exists(teletaskid):
+    conn = None
+    try:
+        # --- Connect to PostgreSQL ---
+        conn = psycopg2.connect(
+            dbname=DB_NAME, user=DB_USER, password=DB_PASS, host=DB_HOST, port=DB_PORT
+        )
+        cur = conn.cursor()
+
+        # --- Query all records ---
+        cur.execute(
+            "SELECT COUNT(*) FROM vtt_files WHERE teletaskid = %s AND isOriginalLang = TRUE;",
+            (teletaskid,),
+        )
+        count = cur.fetchone()[0]
+        return count > 0
+
+    except (Exception, psycopg2.Error) as error:
+        print("Error while querying PostgreSQL", error)
+        return False
+    finally:
+        if conn:
+            cur.close()
+            conn.close()
 
 def databaseTestScript():
     # --- Example Usage ---
@@ -349,11 +439,15 @@ if __name__ == "__main__":
     save_vtt_as_blob(11408, "en", False)
     save_vtt_as_blob(11402, "de", True)
     save_vtt_as_blob(11402, "en", False)
+    add_id_to_blacklist(11406, "404")
     #get_all_vtt_blobs()
     # get_all_vtt_blobs()
     # databaseTestScript()
     #getHighestTeletaskID()
     #getSmallestTeletaskID()
     #get_missing_inbetween_ids()
-    get_missing_translations()
+    #get_missing_translations()
+    #get_missing_available_ids()
+    #print(original_language_exists(11409))
+
 

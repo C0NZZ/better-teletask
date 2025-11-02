@@ -1,7 +1,7 @@
 (function() {
   const player = document.querySelector('video-player');
   if (!player) {
-    console.warn('[btt-tweaks] video player not found')
+    console.warn("[btt-tweaks] video player not found, couldn't apply tweaks")
     return;
   }
   
@@ -22,4 +22,6 @@
     const playBtn = player.shadowRoot && player.shadowRoot.querySelector('control-bar').shadowRoot.querySelector('playpause-control').shadowRoot.querySelector('#button__play_pause');
     if (playBtn && typeof playBtn.click === 'function') playBtn.click();
   });
+
+  console.info('[btt-tweaks] tweaks applied successfully');
 })();

@@ -7,7 +7,8 @@ from typing import List,Optional
 
 from database2 import (
     get_missing_available_inbetween_ids,
-    getSmallestTeletaskID
+    getSmallestTeletaskID,
+    original_language_exists
 )
 from krabbler3 import get_upper_ids, pingVideoByID
 
@@ -173,6 +174,10 @@ async def get_id_for_worker() -> Optional[int]:
         if res == "200":
             print(f"Fetched ID {id} from queue {from_queue}")
             return id
+        elif original_language_exists(id):
+            #TODO log this because this will probably be an error on our end if it happens too often
+            print(f"ID {id} from queue {from_queue} already has original language, skipping.")
+            return await get_id_for_worker()
         else:
             print(f"ID {id} from queue {from_queue} not available (response: {res}), trying next ID.")
             return await get_id_for_worker()
@@ -223,10 +228,39 @@ async def transcribe_worker():
         print(f"Got ID for worker: {id}")
         if id is not None:
             print(f"Transcribing ID: {id}")
+            await asyncio.sleep(1000)
         else:
             print("No IDs available to transcribe, waiting...")
-            await asyncio.sleep(1)  # Wait before checking again
+            await asyncio.sleep(1000)  # Wait before checking again
         
+async def update_upper_ids_periodically():
+    """Periodically update the forward queue with new upper IDs."""
+    await asyncio.sleep(5)
+    while True:
+        print("Updating upper IDs...")
+        upper_ids = get_upper_ids()
+        async with forward_queue._lock:
+            for uid in upper_ids:
+                if not await forward_queue.contains_unlocked(uid):
+                    print(f"Adding new upper ID to forward queue: {uid}")
+                    await forward_queue.add_unlocked(uid)
+        print("Upper IDs update complete. Sleeping for 10 minutes.")
+        await asyncio.sleep(600)  # Sleep for 10 minutes before checking again
+
+async def update_inbetween_ids_periodically():
+    """Periodically update the in-between queue with missing IDs."""
+    await asyncio.sleep(30)
+    while True:
+        print("Updating in-between IDs...")
+        missing_ids = get_missing_available_inbetween_ids()
+        async with in_between_queue._lock:
+            for mid in missing_ids:
+                if not await in_between_queue.contains_unlocked(mid):
+                    print(f"Adding missing in-between ID to queue: {mid}")
+                    await in_between_queue.add_unlocked(mid)
+            # TODO SORT reverse order
+        print("In-between IDs update complete. Sleeping for 10 minutes.")
+        await asyncio.sleep(600)  # Sleep for 10 minutes before checking again
 
 @contextlib.asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -244,13 +278,28 @@ async def lifespan(app: FastAPI):
     
     # Start background tasks
     transcribe_worker_task = asyncio.create_task(transcribe_worker())
+    update_upper_ids_task = asyncio.create_task(update_upper_ids_periodically())
+    update_inbetween_ids_task = asyncio.create_task(update_inbetween_ids_periodically())
     yield  # Yield control to start the server
+    
     transcribe_worker_task.cancel()
     try:
         await transcribe_worker_task
     except asyncio.CancelledError:
         print("Transcribe worker task cancelled.")
     print("Application shutdown: Cleanup complete.")
+
+    # Cancel background tasks
+    update_upper_ids_task.cancel()
+    update_inbetween_ids_task.cancel()
+    try:
+        await update_upper_ids_task
+    except asyncio.CancelledError:
+        print("Update upper IDs task cancelled.")
+    try:
+        await update_inbetween_ids_task
+    except asyncio.CancelledError:
+        print("Update in-between IDs task cancelled.")
 
 # Initialize FastAPI with the lifespan
 app = FastAPI(lifespan=lifespan)

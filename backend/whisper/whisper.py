@@ -7,8 +7,8 @@ from logger import log
 script_dir = os.path.dirname(os.path.abspath(__file__))
 input_path = os.path.join(script_dir, "input/")
 output_path = os.path.join(script_dir, "output/")
-compute_type = "float16"
-device="cuda"
+compute_type = "int8"
+device="cpu"
 
 model = whisperx.load_model("turbo", device=device, compute_type=compute_type)
 
@@ -57,12 +57,12 @@ def transcribeVideoByID(id):
             {"max_line_width": None, "max_line_count": None, "highlight_words": False},
         )
 
-        return language, True, 0
+        return language, True
     except Exception as e:
         # log and return -1 to signal failure
         log(f"❌ ID: {id} ERROR: {e}")
         print(f"❌ ID: {id} ERROR: {e}")
-        return language, True, -1
+        raise
 
 
 if __name__ == '__main__':

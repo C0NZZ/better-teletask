@@ -8,9 +8,10 @@ from typing import List,Optional
 from database2 import (
     get_missing_available_inbetween_ids,
     getSmallestTeletaskID,
-    original_language_exists
+    original_language_exists,
+    initDatabase
 )
-from krabbler3 import get_upper_ids, pingVideoByID
+from krabbler3 import get_upper_ids, pingVideoByID, transcribePipelineVideoByID
 
 class AsyncQueue:
     def __init__(self):
@@ -228,10 +229,11 @@ async def transcribe_worker():
         print(f"Got ID for worker: {id}")
         if id is not None:
             print(f"Transcribing ID: {id}")
-            await asyncio.sleep(1000)
+            transcribePipelineVideoByID(str(id))
+            #await asyncio.sleep(1000)
         else:
             print("No IDs available to transcribe, waiting...")
-            await asyncio.sleep(1000)  # Wait before checking again
+            await asyncio.sleep(60)  # Wait before checking again
         
 async def update_upper_ids_periodically():
     """Periodically update the forward queue with new upper IDs."""
@@ -264,6 +266,7 @@ async def update_inbetween_ids_periodically():
 
 @contextlib.asynccontextmanager
 async def lifespan(app: FastAPI):
+    initDatabase()
     upper_ids = get_upper_ids()
     await forward_queue.replace(upper_ids)
     smallest_id = getSmallestTeletaskID()

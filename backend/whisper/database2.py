@@ -20,7 +20,7 @@ DB_HOST = os.environ.get("DB_HOST")
 DB_PORT = os.environ.get("DB_PORT")
 
 
-def initDatabse():
+def initDatabase():
     try:
         # --- Connect to PostgreSQL ---
         conn = psycopg2.connect(
@@ -425,7 +425,7 @@ def databaseTestScript():
     # Create a dummy file first
     with open("sample.vtt", "w") as f:
         f.write("WEBVTT\n\n00:00:01.000 --> 00:00:14.000\nHello world.")
-    initDatabse()
+    initDatabase()
     save_vtt_as_blob("1", "de", True)
 
     # Query and print all blobs
@@ -434,7 +434,7 @@ def databaseTestScript():
 
 if __name__ == "__main__":
     clearDatabase()
-    initDatabse()
+    initDatabase()
     save_vtt_as_blob(11408, "de", True)
     save_vtt_as_blob(11408, "en", False)
     save_vtt_as_blob(11402, "de", True)

@@ -35,7 +35,7 @@ server.get('/:id', async (request, reply) => {
       // notify local checker service that a missing VTT was requested
       // (best-effort, non-blocking; ignore errors)
       try {
-        await fetch('http://localhost:8000/start-checker')
+        await fetch('http://localhost:8000/prioritize/' + teletaskId, { method: 'POST' })
       } catch (err) {
         console.error('Failed to notify checker:', err)
       }

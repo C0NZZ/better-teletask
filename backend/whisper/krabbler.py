@@ -6,7 +6,7 @@ import ffmpeg
 import os
 from logger import log
 from dotenv import load_dotenv, find_dotenv
-from database2 import getHighestTeletaskID, save_vtt_as_blob
+from database import getHighestTeletaskID, save_vtt_as_blob
 from whisper import transcribeVideoByID
 
 load_dotenv(find_dotenv())

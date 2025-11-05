@@ -1,5 +1,5 @@
-from krabbler3 import pingVideoByID
-from database2 import getHighestTeletaskID
+from krabbler import pingVideoByID
+from database import getHighestTeletaskID
 
 res200 = []
 res404 = []

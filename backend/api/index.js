@@ -27,7 +27,7 @@ server.get('/:id', async (request, reply) => {
   try {
     // Query database for VTT files with this teletask ID
     const result = await db.query(
-      'SELECT id, teletaskid, language, isOriginalLanguage, vtt_data FROM vtt_files WHERE teletaskid = $1 AND isOriginalLanguage = True ORDER BY language LIMIT 1',
+      'SELECT id, teletaskid, language, isOriginalLang, vtt_data FROM vtt_files WHERE teletaskid = $1 AND isOriginalLang = True ORDER BY language LIMIT 1',
       [teletaskId]
     )
     
@@ -35,7 +35,7 @@ server.get('/:id', async (request, reply) => {
       // notify local checker service that a missing VTT was requested
       // (best-effort, non-blocking; ignore errors)
       try {
-        await fetch('http://localhost:8000/prioritize/' + teletaskId, { method: 'POST' })
+        await fetch('http://127.0.0.1:8000/prioritize/' + teletaskId, { method: 'POST' })
       } catch (err) {
         console.error('Failed to notify checker:', err)
       }

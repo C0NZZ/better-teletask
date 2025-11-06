@@ -1,13 +1,13 @@
 const { Pool } = require('pg');
-require('dotenv').config({ path: '../../.env' });
+const path = require('path');
+require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
 
-// Create a connection pool
 const pool = new Pool({
-  user: process.env.POSTGRES_USER,
-  host: process.env.DB_HOST,
-  database: process.env.POSTGRES_DB,
-  password: process.env.POSTGRES_PASSWORD,
-  port: process.env.DB_PORT,
+  user: process.env.DB_USER || process.env.POSTGRES_USER,
+  host: process.env.DB_HOST || 'localhost',
+  database: process.env.DB_NAME || process.env.POSTGRES_DB,
+  password: String(process.env.DB_PASS ?? process.env.POSTGRES_PASSWORD ?? ''),
+  port: process.env.DB_PORT || process.env.POSTGRES_PORT || 5432,
 });
 
 // Test the connection

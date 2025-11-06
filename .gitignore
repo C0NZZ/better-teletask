@@ -1,5 +1,6 @@
 .env
 node_modules
+crawl_results.txt
 *.mp3
 *.vtt
 *.pyc

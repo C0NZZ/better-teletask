@@ -1,6 +1,15 @@
 (async function addSubtitles() {
-  const PLAYER_ID = 'player';
-  const BASEURL = 'https://test.com/btt'
+  const { apiKey } = await browser.storage.local.get('apiKey');
+  if (!apiKey) {
+    console.warn("[btt-subtitles] no API key set, couldn't inject subtitles");
+    return;
+  }
+  const playerEl = document.getElementById('player');
+  if (!playerEl) {
+    console.warn(`[btt-subtitles] player not found, couldn't inject subtitles`);
+    return;
+  }
+  const baseUrl = 'https://test.com/btt'
 
   const path = (typeof window !== 'undefined' && window.location && window.location.pathname) ? window.location.pathname : '';
     const segments = path.split('/').filter(Boolean);
@@ -11,26 +20,16 @@
       {
         lang: 'orig',
         name: 'Original',
-        url: `${BASEURL}/${last}`,
-        localurl: ''
-      },
-      {
-        lang: 'de',
-        name: 'Deutsch',
-        url: `${BASEURL}/${last}/de`,
-        localurl: ''
-      },
-      {
-        lang: 'en',
-        name: 'English',
-        url: `${BASEURL}/${last}/en`,
+        url: `${baseUrl}/${last}`,
         localurl: ''
       }
     ]
 
   async function fetchSubtitle(url) {
     try {
-      const response = await fetch(url);
+      const response = await fetch(url, {
+        headers: { "Authorization": `Bearer ${apiKey}` }
+      });
       if (!response.ok) {
         throw new Error(`Failed to fetch subtitle: ${response.statusText}`);
       }
@@ -94,12 +93,6 @@
       }
     }
     return null;
-  }
-
-  const playerEl = document.getElementById(PLAYER_ID);
-  if (!playerEl) {
-    console.warn(`[btt-subtitles] element with id="${PLAYER_ID}" not found`);
-    return;
   }
 
   const raw = playerEl.getAttribute('configuration');

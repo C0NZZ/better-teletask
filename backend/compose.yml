@@ -3,6 +3,7 @@ services:
     build: ./whisper
     volumes:
       - ./.env:/whisper/.env:ro
+      - ./whisper/logs:/whisper/logs
       - "models:/root/.cache/huggingface"
     # ports:
     #   - "8000:8000"

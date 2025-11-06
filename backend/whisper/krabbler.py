@@ -132,7 +132,10 @@ def pingVideoByID(id) -> str:
 def get_upper_ids():
     ids = []
     unreachable_ids = []
-    highest = getHighestTeletaskID() + 1
+    highest = getHighestTeletaskID()
+    if highest is None:
+        return ids
+    highest = highest + 1
     for i in range(10):
         res = pingVideoByID(str(highest + i))
         if res == "200":

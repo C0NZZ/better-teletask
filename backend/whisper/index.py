@@ -253,7 +253,7 @@ async def update_upper_ids_periodically():
                     print(f"Adding new upper ID to forward queue: {uid}")
                     await forward_queue.add_unlocked(uid)
         print("Upper IDs update complete. Sleeping for 10 minutes.")
-        await asyncio.sleep(600)  # Sleep for 10 minutes before checking again
+        await asyncio.sleep(180)  # Sleep for 10 minutes before checking again
 
 async def update_inbetween_ids_periodically():
     """Periodically update the in-between queue with missing IDs."""
@@ -268,17 +268,20 @@ async def update_inbetween_ids_periodically():
                     await in_between_queue.add_unlocked(mid)
             # TODO SORT reverse order
         print("In-between IDs update complete. Sleeping for 10 minutes.")
-        await asyncio.sleep(600)  # Sleep for 10 minutes before checking again
+        await asyncio.sleep(180) 
 
 @contextlib.asynccontextmanager
 async def lifespan(app: FastAPI):
     initDatabase()
     upper_ids = get_upper_ids()
-    await forward_queue.replace(upper_ids)
+    if upper_ids is not None:
+        await forward_queue.replace(upper_ids)
     smallest_id = getSmallestTeletaskID()
-    await backward_queue.replace(list(range(smallest_id, 0, -1)))
+    if smallest_id is not None:
+        await backward_queue.replace(list(range(smallest_id, 0, -1)))
     missing_ids = get_missing_available_inbetween_ids()
-    await in_between_queue.replace(sorted(missing_ids, reverse=True))
+    if missing_ids:
+        await in_between_queue.replace(sorted(missing_ids, reverse=True))
 
     print("Application startup: Queues initialized.")
     print("Forward queue:", await forward_queue.get_all())
@@ -312,6 +315,20 @@ async def lifespan(app: FastAPI):
 
 # Initialize FastAPI with the lifespan
 app = FastAPI(lifespan=lifespan)
+
+#DEBUGGING ENDPOINTS
+@app.get("/queues")
+async def get_queues():
+    prio = await prio_queue.get_all()
+    forward = await forward_queue.get_all()
+    in_between = await in_between_queue.get_all()
+    backward = await backward_queue.get_all()
+    return {
+        "priority_queue": prio,
+        "forward_queue": forward,
+        "in_between_queue": in_between,
+        "backward_queue": backward
+    }
 
 @app.get("/ping")
 async def ping_pong():

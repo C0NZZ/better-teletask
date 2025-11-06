@@ -434,12 +434,12 @@ def databaseTestScript():
 
 if __name__ == "__main__":
     clearDatabase()
-    initDatabase()
-    save_vtt_as_blob(11408, "de", True)
-    save_vtt_as_blob(11408, "en", False)
-    save_vtt_as_blob(11402, "de", True)
-    save_vtt_as_blob(11402, "en", False)
-    add_id_to_blacklist(11406, "404")
+    #initDatabase()
+    #save_vtt_as_blob(11408, "de", True)
+    #save_vtt_as_blob(11408, "en", False)
+    #save_vtt_as_blob(11402, "de", True)
+    #save_vtt_as_blob(11402, "en", False)
+    #add_id_to_blacklist(11406, "404")
     #get_all_vtt_blobs()
     # get_all_vtt_blobs()
     # databaseTestScript()

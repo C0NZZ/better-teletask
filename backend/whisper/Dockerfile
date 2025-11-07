@@ -8,7 +8,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends ffmpeg
 
 RUN pip install -r requirements.txt
 
-ENV LD_LIBRARY_PATH="/usr/local/lib/python3.13/site-packages/nvidia/cudnn/lib/"
+ENV HF_HOME=${HF_HOME:-/models/huggingface} \
+    TORCH_HOME=${TORCH_HOME:-/models/torch} \
+    LD_LIBRARY_PATH=${LD_LIBRARY_PATH:-/usr/local/lib/python3.13/site-packages/nvidia/cudnn/lib/}
 
 RUN mkdir input output
 

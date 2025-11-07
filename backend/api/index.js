@@ -35,7 +35,7 @@ server.get('/:id', async (request, reply) => {
       // notify local checker service that a missing VTT was requested
       // (best-effort, non-blocking; ignore errors)
       try {
-        await fetch('http://localhost:8000/start-checker')
+        await fetch('http://transcriber:8000/start-checker')
       } catch (err) {
         console.error('Failed to notify checker:', err)
       }
@@ -98,7 +98,7 @@ server.get('/:id/:language', async (request, reply) => {
   }
 })
 
-server.listen({ port: 8080, host: '0.0.0.0' }, (err, address) => {
+server.listen({ port: 80, host: '0.0.0.0' }, (err, address) => {
   if (err) {
     console.error(err)
     process.exit(1)

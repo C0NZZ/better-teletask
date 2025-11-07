@@ -1,24 +1,32 @@
 document.addEventListener('DOMContentLoaded', async () => {
   const apiKeyInput = document.getElementById('apiKey');
-  const statusEl = document.getElementById('status');
+  const statusDiv = document.getElementById('status');
+  const statusText = document.getElementById('statust');
+  const statusSym = document.getElementById('statuss').querySelector('path');
   const saveBtn = document.getElementById('save');
 
   const { apiKey } = await browser.storage.local.get('apiKey');
   if (apiKey) {
     // apiKeyInput.value = apiKey;
     // apiKeyInput.type = 'password';
-    statusEl.textContent = "API key saved";
+    statusDiv.style.color = "#77b379ff"
+    statusText.textContent = "API key saved.";
+    statusSym.setAttribute("d", "M14 25l6 6 14-14");
   }
 
   saveBtn.addEventListener('click', async () => {
     const apiKey = apiKeyInput.value.trim();
     if (!apiKey) {
       await browser.storage.local.remove('apiKey');
-      statusEl.textContent = "Error: No key entered.";
+      statusDiv.style.color = "#f6a09aff"
+      statusText.textContent = "No key entered.";
+      statusSym.setAttribute("d", "M16 16l16 16M32 16l-16 16");
       return;
     }
 
     await browser.storage.local.set({ apiKey });
-    statusEl.textContent = "API key saved";
+    statusDiv.style.color = "#77b379ff"
+    statusText.textContent = "API key saved.";
+    statusSym.setAttribute("d", "M14 25l6 6 14-14");
   });
 });

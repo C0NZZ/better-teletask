@@ -9,7 +9,7 @@
     console.warn(`[btt-subtitles] player not found, couldn't inject subtitles`);
     return;
   }
-  const baseUrl = 'https://test.com/btt'
+  const baseUrl = 'https://btt.makeruniverse.de'
 
   const path = (typeof window !== 'undefined' && window.location && window.location.pathname) ? window.location.pathname : '';
     const segments = path.split('/').filter(Boolean);

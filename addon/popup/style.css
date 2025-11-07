@@ -40,7 +40,7 @@ body {
   display:flex;
   gap:12px;
   align-items:center;
-  margin-bottom:6px;
+  margin-bottom:20px;
 }
 .logo {
   width:44px;
@@ -91,7 +91,7 @@ body {
   background:var(--btn-bg);
   color:var(--accent);
   cursor:pointer;
-  font-weight:600;
+  font-weight:800;
   font-size:0.92rem;
   transition:transform .08s ease, box-shadow .12s;
 }
@@ -99,11 +99,15 @@ body {
 .btn-primary:active {transform:translateY(0)}
 
 .status {
-  margin:10px 0 0 0;
+  margin:0.6rem 0 0 0.3rem;
   min-height:1.4em;
   color:var(--muted);
   font-size:0.88rem;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
+.status p {margin: 0;}
 .card-footer {
   margin-top:10px;
   border-top:1px solid rgba(255,255,255,0.02);

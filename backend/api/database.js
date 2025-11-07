@@ -1,5 +1,5 @@
 const { Pool } = require('pg');
-require('dotenv').config({ path: '../../.env' });
+require('dotenv').config({ path: '.env' });
 
 // Create a connection pool
 const pool = new Pool({

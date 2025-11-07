@@ -4,7 +4,7 @@ services:
     volumes:
       - ./.env:/whisper/.env:ro
       - ./whisper/logs:/whisper/logs
-      - "models:/root/.cache/huggingface"
+      - "models:/models"
     # ports:
     #   - "8000:8000"
     gpus: all
@@ -15,14 +15,14 @@ services:
     # ports:
     #   - "5432:5432"
     volumes:
-      - "pgdata:/var/lib/postgresql/data"
+      - "pgdata:/var/lib/postgresql"
 
   api:
     build: ./api
     volumes:
       - ./.env:/node/.env:ro
     ports:
-    - "8080:8080"
+    - "80:80"
 
 volumes:
   models:

@@ -261,12 +261,14 @@ async def update_inbetween_ids_periodically():
     while True:
         print("Updating in-between IDs...")
         missing_ids = get_missing_available_inbetween_ids()
-        async with in_between_queue._lock:
+        async with multi_lock([in_between_queue, backward_queue]):
             for mid in missing_ids:
                 if not await in_between_queue.contains_unlocked(mid):
-                    print(f"Adding missing in-between ID to queue: {mid}")
                     await in_between_queue.add_unlocked(mid)
-            # TODO SORT reverse order
+                    if await backward_queue.contains_unlocked(mid):
+                        print(f"Removing ID {mid} from backward queue as it's now in in-between queue.")
+                        await backward_queue.remove_unlocked(mid)
+            await in_between_queue.sort_reverse()
         print("In-between IDs update complete. Sleeping for 10 minutes.")
         await asyncio.sleep(180) 
 

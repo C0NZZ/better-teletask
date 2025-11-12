@@ -7,8 +7,8 @@ from logger import log
 script_dir = os.path.dirname(os.path.abspath(__file__))
 input_path = os.path.join(script_dir, "input/")
 output_path = os.path.join(script_dir, "output/")
-compute_type = "int8"
-device="cpu"
+compute_type = "float16"
+device="cuda"
 
 model = whisperx.load_model("turbo", device=device, compute_type=compute_type)
 

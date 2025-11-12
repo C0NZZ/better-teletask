@@ -20,7 +20,7 @@
       {
         lang: 'orig',
         name: 'Original',
-        url: `${baseUrl}/${last}`,
+        url: `${baseUrl}/sub/${last}/`,
         localurl: ''
       }
     ]

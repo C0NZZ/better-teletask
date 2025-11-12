@@ -71,10 +71,18 @@ async function getAllVttFiles() {
 
 // Example function to get VTT file by teletask ID and language
 async function getVttFile(teletaskId, language) {
-  const result = await query(
-    'SELECT id, teletaskid, language, vtt_data FROM vtt_files WHERE teletaskid = $1 AND language = $2',
-    [teletaskId, language]
-  );
+  let result;
+  if (!language) {
+    result = await query(
+      'SELECT id, teletaskid, language, isOriginalLanguage, vtt_data FROM vtt_files WHERE teletaskid = $1 AND isOriginalLanguage = True ORDER BY language LIMIT 1',
+      [teletaskId]
+    );
+  } else {
+    result = await query(
+      'SELECT id, teletaskid, language, vtt_data FROM vtt_files WHERE teletaskid = $1 AND language = $2',
+      [teletaskId, language]
+    );
+  }
   return result.rows[0];
 }
 

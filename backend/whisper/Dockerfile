@@ -14,6 +14,4 @@ ENV HF_HOME=${HF_HOME:-/models/huggingface} \
 
 RUN mkdir input output
 
-# COPY cronjob curl auf http://localhost:8000/start-checker
-
 CMD [ "python", "index.py" ]

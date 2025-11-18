@@ -172,13 +172,12 @@ async def get_id_for_worker() -> Optional[int]:
             id = await backward_queue.dequeue_unlocked()
     if id != -1:
         res = pingVideoByID(str(id))
-        if res == "200":
-            print(f"Fetched ID {id} from queue {from_queue}")
-            return id
-        elif original_language_exists(id):
-            #TODO log this because this will probably be an error on our end if it happens too often
+        if original_language_exists(id):
             print(f"ID {id} from queue {from_queue} already has original language, skipping.")
             return await get_id_for_worker()
+        elif res == "200":
+            print(f"Fetched ID {id} from queue {from_queue}")
+            return id
         else:
             print(f"ID {id} from queue {from_queue} not available (response: {res}), trying next ID.")
             return await get_id_for_worker()

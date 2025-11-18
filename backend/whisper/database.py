@@ -7,7 +7,8 @@ from logger import log
 load_dotenv(find_dotenv())
 
 OUTPUTFOLDER = os.environ.get("VTT_DEST_FOLDER")
-print(OUTPUTFOLDER)
+MODEL = os.environ.get("ASR_MODEL")
+# print(OUTPUTFOLDER)
 
 script_dir = os.path.dirname(os.path.abspath(__file__))
 input_path = os.path.join(script_dir, OUTPUTFOLDER)
@@ -173,13 +174,14 @@ def save_vtt_as_blob(teletaskid, language, isOriginalLang):
             txt_binary_data = f.read()
 
         cur.execute(
-            "INSERT INTO vtt_files (teletaskid,language,isOriginalLang,vtt_data, txt_data) VALUES (%s,%s,%s,%s,%s);",
+            "INSERT INTO vtt_files (teletaskid,language,isOriginalLang,vtt_data,txt_data,asr_model) VALUES (%s,%s,%s,%s,%s,%s);",
             (
                 teletaskid,
                 language,
                 isOriginalLang,
                 vtt_binary_data,
                 txt_binary_data,
+                MODEL,
             ),
         )
 

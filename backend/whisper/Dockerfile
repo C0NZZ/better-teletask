@@ -2,11 +2,13 @@ FROM python:3.13-trixie
 
 WORKDIR /whisper
 
-COPY checker.py database.py index.py krabbler2.py whisper.py requirements.txt logger.py ./
-
 RUN apt-get update && apt-get install -y --no-install-recommends ffmpeg
 
+COPY requirements.txt ./
+
 RUN pip install -r requirements.txt
+
+COPY crawlnewids.py database.py index.py krabbler.py logger.py whisper.py ./
 
 ENV HF_HOME=${HF_HOME:-/models/huggingface} \
     TORCH_HOME=${TORCH_HOME:-/models/torch} \

@@ -1,7 +1,11 @@
 import whisperx
 import os
 from whisperx.utils import get_writer
+from dotenv import load_dotenv, find_dotenv
 from logger import log
+
+load_dotenv(find_dotenv())
+MODEL = os.environ.get("ASR_MODEL")
 
 # Get path relative to this script file, not execution location
 script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -10,7 +14,7 @@ output_path = os.path.join(script_dir, "output/")
 compute_type = "float16"
 device = "cuda"
 
-model = whisperx.load_model("turbo", device=device, compute_type=compute_type)
+model = whisperx.load_model(MODEL, device=device, compute_type=compute_type)
 
 def transcribeVideoByID(id): 
     file_path = os.path.join(input_path, id + ".mp3")

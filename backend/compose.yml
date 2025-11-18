@@ -7,8 +7,12 @@ services:
       - "models:/models"
     # ports:
     #   - "8000:8000"
+    depends_on:
+      - database
     gpus: all
-  
+    stop_signal: SIGINT
+    stop_grace_period: 30s
+
   database:
     image: postgres:18-alpine
     env_file: ".env"
@@ -23,6 +27,8 @@ services:
       - ./.env:/node/.env:ro
     ports:
     - "80:80"
+    depends_on:
+      - transcriber
 
 volumes:
   models:

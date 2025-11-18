@@ -16,6 +16,8 @@ body {
   font-family:var(--font-stack);
   background: linear-gradient(45deg,#b00634 0%, #dc6006 35%, #dc6006 65%, #f0a102 100%);
   display:flex;
+  flex-direction: column;
+  gap: 1rem;
   align-items:center;
   justify-content:center;
   padding:18px;
@@ -36,11 +38,22 @@ body {
   backdrop-filter: blur(6px);
 }
 
+h1 {
+  margin:0;
+  font-size:1.2rem;
+  letter-spacing:0.2px;
+}
+h2 {
+  margin:0 0 0 0.3rem;
+  font-size:1.1rem;
+  letter-spacing:0.2px;
+  font-weight: 600;
+}
+
 .card-header {
   display:flex;
   gap:12px;
   align-items:center;
-  margin-bottom:20px;
 }
 .logo {
   width:44px;
@@ -48,13 +61,12 @@ body {
   color:var(--accent);
   flex:0 0 44px;
 }
-.card-header h1 {
-  margin:0;
-  font-size:1.1rem;
-  letter-spacing:0.2px;
+h2:nth-child(3) {
+  margin-left: auto;
+  font-weight: 400;
 }
 
-.card-body {margin-top:6px}
+.card-body {margin-top:0.8rem}
 .lead {
   margin:0 0 12px 0;
   color:var(--muted);
@@ -107,7 +119,18 @@ body {
   align-items: center;
   gap: 8px;
 }
-.status p {margin: 0;}
+#statust {margin: 0;}
+#statusb {
+  margin:0 0.3rem 0 auto;
+  background: none;
+  border: none;
+  padding: 0;
+  color: #f6a09aff;
+  text-decoration: underline;
+  cursor: pointer;
+  font: inherit;
+  visibility: hidden;
+}
 .card-footer {
   margin-top:10px;
   border-top:1px solid rgba(255,255,255,0.02);

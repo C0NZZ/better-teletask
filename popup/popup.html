@@ -11,9 +11,13 @@
     <div class="card">
       <header class="card-header" aria-hidden="true">
         <img src="logo.png" height="24px">
-        <h1>Better Tele-Task</h1>
+        <h1>Better Tele-Task</h1><h2>Settings</h2>
       </header>
-
+    </div>
+    <div class="card">
+      <header class="card-header" aria-hidden="true">
+        <h2>API key</h2>
+      </header>
       <main class="card-body">
         <label for="apiKey" class="visually-hidden">Better Tele-Task API key</label>
         <form class="input-group">
@@ -26,12 +30,9 @@
             <path d="m12 24c0 3 2 5 5 5s5-2 5-5c0-7-10-7-10 0m10 0h14v4h-4v-4h-6" stroke="currentcolor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
           <p id="statust" role="status" aria-live="polite">Please enter your API key.</p>
+          <button id="statusb">Delete</button>
         </div>
       </main>
-
-      <footer class="card-footer">
-        <small>The key will only be stored in your browser.</small>
-      </footer>
     </div>
 
     <script src="popup.js"></script>

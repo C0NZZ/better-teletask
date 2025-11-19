@@ -14,7 +14,50 @@ server.get('/', async (request, reply) => {
   return reply.redirect('https://github.com/C0NZZ/better-teletask');
 })
 
-server.get('/sub/:id/:language', async (request, reply) => {
+async function verifyAuthHeader(request, reply) {
+  const authHeader = request.headers['authorization'];
+  if (!authHeader) {
+    reply.code(401).send({ error: 'Missing Authorization header' });
+    return;
+  }
+
+  const token = authHeader.replace('Bearer ', '').trim();
+  if (!token) {
+    reply.code(401).send({ error: 'Invalid Authorization header' });
+    return;
+  }
+
+  const apiKey = await db.getApiKey(token);
+  if (!apiKey) {
+    reply.code(401).send({ error: 'Invalid API key' });
+    return;
+  }
+
+  if (apiKey.status == 'revoked') {
+    reply.code(403).send({ error: 'API key has been revoked' });
+    return;
+  }
+  if (apiKey.status == 'expired') {
+    reply.code(403).send({ error: 'API key has expired' });
+    return;
+  }
+  if (apiKey.status !== 'active') {
+    reply.code(403).send({ error: 'API key is not active' });
+    return;
+  }
+
+  const now = new Date();
+  const expiration = new Date(apiKey.expiration_date);
+  if (expiration < now) {
+    reply.code(403).send({ error: 'API key has expired' });
+    return;
+  }
+
+  // brauchen wir den key später noch? dann hier:
+  request.apiKey = apiKey;
+}
+
+server.get('/sub/:id/:language', { preHandler: verifyAuthHeader }, async (request, reply) => {
   const { id, language } = request.params
   
   const teletaskId = parseInt(id, 10)

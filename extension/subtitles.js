@@ -30,10 +30,19 @@
       const response = await fetch(url, {
         headers: { "Authorization": `Bearer ${apiKey}` }
       });
+      text = await response.text();
       if (!response.ok) {
-        throw new Error(`Failed to fetch subtitle: ${response.statusText}`);
+        try {
+          const json = JSON.parse(text);
+          if (json.error) message = json.error;
+        } catch {
+          if (response.status) {
+            message = `HTTP ${response.status}`;
+          }
+        }
+        throw new Error(message);
       }
-      return await response.text();
+      return text;
     } catch (error) {
       console.error('[btt-subtitles] Error fetching subtitle:', error);
       return null;

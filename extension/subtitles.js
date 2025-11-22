@@ -1,4 +1,8 @@
 (async function addSubtitles() {
+  {
+    const { featureSettings } = await browser.storage.local.get('featureSettings');
+    if (!featureSettings?.subtitles) return;
+  }
   const { apiKey } = await browser.storage.local.get('apiKey');
   if (!apiKey) {
     console.warn("[btt-subtitles] no API key set, couldn't inject subtitles");

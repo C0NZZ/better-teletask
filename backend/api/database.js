@@ -1,13 +1,12 @@
 const { Pool } = require('pg');
 require('dotenv').config({ path: '.env' });
 
-// Create a connection pool
 const pool = new Pool({
-  user: process.env.POSTGRES_USER,
-  host: process.env.DB_HOST,
-  database: process.env.POSTGRES_DB,
-  password: process.env.POSTGRES_PASSWORD,
-  port: process.env.DB_PORT,
+  user: process.env.DB_USER || process.env.POSTGRES_USER,
+  host: process.env.DB_HOST || 'localhost',
+  database: process.env.DB_NAME || process.env.POSTGRES_DB,
+  password: String(process.env.DB_PASS ?? process.env.POSTGRES_PASSWORD ?? ''),
+  port: process.env.DB_PORT || process.env.POSTGRES_PORT || 5432,
 });
 
 // Test the connection
@@ -74,7 +73,7 @@ async function getVttFile(teletaskId, language) {
   let result;
   if (!language) {
     result = await query(
-      'SELECT id, teletaskid, language, isOriginalLanguage, vtt_data FROM vtt_files WHERE teletaskid = $1 AND isOriginalLanguage = True ORDER BY language LIMIT 1',
+      'SELECT id, teletaskid, language, isOriginalLang, vtt_data FROM vtt_files WHERE teletaskid = $1 AND isOriginalLang = True ORDER BY language LIMIT 1',
       [teletaskId]
     );
   } else {

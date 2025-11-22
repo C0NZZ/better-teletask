@@ -8,96 +8,98 @@
   --radius: 12px;
   --max-width: 380px;
   --font-stack: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+  --font-size: .9rem;
 }
 
 *{box-sizing:border-box}
 html, body {
   width: max-content;
-  height:max-content;
+  height: max-content;
 }
 body {
-  margin:0;
-  font-family:var(--font-stack);
+  margin: 0;
+  font-family: var(--font-stack);
   background: linear-gradient(45deg, var(--ttred) 0%, var(--ttorange) 35%, var(--ttorange) 65%, var(--ttyellow) 100%);
-  display:flex;
+  display: flex;
   flex-direction: column;
   gap: 1rem;
-  align-items:center;
-  justify-content:center;
-  padding:18px;
+  align-items: center;
+  justify-content: center;
+  padding: 18px;
   color: #e6eef6;
-  -webkit-font-smoothing:antialiased;
-  -moz-osx-font-smoothing:grayscale;
-  line-height:1.35;
+  line-height: 1.35;
+  font-size: var(--font-size);
 }
 
 .card {
-  width:100%;
-  max-width:var(--max-width);
+  width: 100%;
+  max-width: var(--max-width);
   background: rgba(0, 0, 0, 0.3);
   border: 1px solid rgba(255,255,255,0.04);
-  border-radius:var(--radius);
-  padding:18px;
+  border-radius: var(--radius);
+  padding: 18px;
   box-shadow: 0 8px 30px rgba(2,6,23,0.6), inset 0 1px 0 rgba(255,255,255,0.02);
   backdrop-filter: blur(6px);
 }
 
-h1 {
-  margin:0;
-  font-size:1.2rem;
-  letter-spacing:0.2px;
+header {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin: 0 0 0 0.3rem;
+  letter-spacing: 0.2px;
 }
-h2 {
-  margin:0 0 0 0.3rem;
-  font-size:1.1rem;
-  letter-spacing:0.2px;
+h1 {
+  margin: 0;
+  font-size: 1.1rem;
   font-weight: 600;
 }
-
-.card-header {
-  display:flex;
-  gap:12px;
-  align-items:center;
-}
-.logo {
-  width:44px;
-  height:44px;
-  color:var(--accent);
-  flex:0 0 44px;
-}
-h2:nth-child(3) {
-  margin-left: auto;
+h2 {
+  margin: 0 0 0 auto;
+  font-size: 1rem;
   font-weight: 400;
 }
+.card-header {
+  font-size: 1rem;
+  letter-spacing: 0.2px;
+  font-weight: 600;
+}
+.logo {
+  width: 44px;
+  height: 44px;
+  color: var(--accent);
+  flex: 0 0 44px;
+}
 
-.card-body {margin-top:0.8rem}
+.card-body {margin-top:0.6rem}
 
 a {
   color: var(--ttyellow);
+  text-decoration: underline;
+  cursor: pointer;
 }
-form > * > *{
-  font-family:var(--font-stack);
-  font-size:0.95rem;
+input, label {
+  font-family: var(--font-stack);
+  font-size: 0.95rem;
 }
-
 .input-group {
   display:flex;
   gap:10px;
   align-items:center;
 }
-.input-wrapper {
+.key-input-wrapper {
   position: relative;
   flex: 1;
 }
 #apikeyInput {
   width: 100%;
-  padding:10px 40px 10px 12px;
-  border-radius:10px;
-  border:1px solid rgba(255,255,255,0.04);
-  background:var(--glass);
-  color:inherit;
-  outline:none;
-  transition:box-shadow .12s, border-color .12s;
+  padding: 10px 40px 10px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(255,255,255,0.04);
+  background: var(--glass);
+  color: inherit;
+  outline: none;
+  transition: box-shadow .12s, border-color .12s;
 }
 #apikeyInput::placeholder {color: rgba(230,238,246,0.45)}
 #apikeyInput:focus {
@@ -115,7 +117,6 @@ form > * > *{
   padding: 4px 8px;
   cursor: pointer;
   opacity: 0.7;
-  visibility: hidden;
   width: 35px;
   height: 35px;
   display: flex;
@@ -129,38 +130,38 @@ form > * > *{
 
 .btn-primary {
   --btn-bg: linear-gradient(180deg, rgba(231, 166, 110, 0.16), rgba(231, 175, 110, 0.06));
-  padding:10px 14px;
-  border-radius:10px;
-  border:1px solid rgba(231, 160, 110, 0.18);
-  background:var(--btn-bg);
-  color:var(--accent);
-  cursor:pointer;
-  font-weight:800;
-  font-size:0.92rem;
-  transition:transform .08s ease, box-shadow .12s;
+  padding: 11px 14px;
+  border-radius: 10px;
+  border: 1px solid rgba(231, 160, 110, 0.18);
+  background: var(--btn-bg);
+  color: var(--accent);
+  cursor: pointer;
+  font-weight: 800;
+  font-size: 0.92rem;
+  transition: transform .08s ease, box-shadow .12s;
 }
-.btn-primary:hover {transform:translateY(-1px); box-shadow: 0 6px 22px rgba(231, 181, 110, 0.06)}
-.btn-primary:active {transform:translateY(0)}
+.btn-primary:hover {transform: translateY(-1px); box-shadow: 0 6px 22px rgba(231, 181, 110, 0.06)}
+.btn-primary:active {transform: translateY(0)}
 
 #featuresSave.btn-primary {
-  margin-top: 1rem;
+  margin-top: 0.7rem;
 }
 
 [type="checkbox"] {accent-color: var(--ttyellow);}
 [type="checkbox"]:hover {accent-color: var(--accent);}
 
 .status {
-  margin:0.6rem 0 0 0.3rem;
-  min-height:1.4em;
-  color:var(--muted);
-  font-size:0.88rem;
+  margin: 0.6rem 0 0 0.3rem;
+  min-height: 1.4em;
+  color: var(--muted);
+  font-size: 0.88rem;
   display: flex;
   align-items: center;
   gap: 8px;
 }
 #apikeyStatusText {margin: 0;}
 #apikeyDelete {
-  margin:0 0.3rem 0 auto;
+  margin: 0 0.3rem 0 auto;
   background: none;
   border: none;
   padding: 0;
@@ -171,22 +172,22 @@ form > * > *{
   visibility: hidden;
 }
 .card-footer {
-  margin-top:1rem;
-  border-top:1px solid rgba(255,255,255,0.08);
-  padding-top:5px;
+  margin-top: 0.7rem;
+  border-top: 1px solid rgba(255,255,255,0.07);
+  padding-top: 5px;
 }
-.card-footer small {color:rgba(212, 220, 229, 0.7)}
+.card-footer small {color: rgba(212, 220, 229, 0.7)}
 
 .visually-hidden {
-  position:absolute !important;
-  height:1px; width:1px;
-  overflow:hidden;
-  clip:rect(1px,1px,1px,1px);
-  white-space:nowrap;
+  position: absolute !important;
+  height: 1px; width:1px;
+  overflow: hidden;
+  clip-path: rect(1px 1px 1px 1px);
+  white-space: nowrap;
 }
 
 @media (max-width:420px) {
-  .card{ padding:14px }
-  .logo{ width:36px; height:36px }
-  #apiKey{ padding:9px 10px }
+  .card {padding:14px}
+  .logo {width:36px; height:36px}
+  #apiKey {padding:9px 10px}
 }

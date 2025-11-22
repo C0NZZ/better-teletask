@@ -15,6 +15,7 @@
 
   "permissions": [
     "https://btt.makeruniverse.de/*",
+    "activeTab",
     "storage"
   ],
 

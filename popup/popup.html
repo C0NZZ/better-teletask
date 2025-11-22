@@ -10,46 +10,44 @@
 
   <body>
     <div class="card">
-      <header class="card-header" aria-hidden="true">
+      <header aria-hidden="true">
         <img src="../icons/32.png" height="24px">
         <h1>Better Tele-Task</h1><h2>Settings</h2>
       </header>
     </div>
     <div class="card" id="apikey">
-      <header class="card-header" aria-hidden="true">
-        <h2>API key</h2>
-      </header>
-      <main class="card-body">
-        <label for="apikeyInput" class="visually-hidden">Better Tele-Task API key</label>
-        <form class="input-group">
-          <div class="input-wrapper">
-            <input type="text" id="apikeyInput" placeholder="Better Tele-Task API key" autocomplete="off" required/>
-            <button type="button" id="apikeyToggle" aria-label="Toggle password visibility">
-              <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/>
-                <circle cx="12" cy="12" r="3"/>
-                <line style="visibility: hidden" x1="2" y1="3" x2="22" y2="21"/>
-              </svg>
-            </button>
+      <details>
+        <summary class="card-header" aria-hidden="true">API key</summary>
+        <main class="card-body">
+          <label for="apikeyInput" class="visually-hidden">Better Tele-Task API key</label>
+          <div class="input-group">
+            <div class="key-input-wrapper">
+              <input type="text" id="apikeyInput" placeholder="Better Tele-Task API key" autocomplete="off" required/>
+              <button type="button" id="apikeyToggle" aria-label="Toggle password visibility">
+                <svg viewBox="0 0 24 24" fill="none" stroke="#e6eef6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/>
+                  <circle cx="12" cy="12" r="3"/>
+                  <line x1="2" y1="3" x2="22" y2="21"/>
+                </svg>
+              </button>
+            </div>
+            <button id="apikeySave" class="btn-primary" type="button" aria-label="Save API key">Save</button>
           </div>
-          <button id="apikeySave" class="btn-primary" type="submit" aria-label="Save API key">Save</button>
-        </form>
-        <div id="apikeyStatus" class="status">
-          <svg id="apikeyStatusIcon" width="0.88rem" height="0.88rem" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <circle cx="24" cy="24" r="22" stroke="currentcolor" stroke-width="4" fill="none"/>
-            <path d="m12 24c0 3 2 5 5 5s5-2 5-5c0-7-10-7-10 0m10 0h14v4h-4v-4h-6" stroke="currentcolor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
-          <p id="apikeyStatusText" role="status" aria-live="polite">Please enter your API key.</p>
-          <button id="apikeyDelete">Delete</button>
-        </div>
-      </main>
+          <div id="apikeyStatus" class="status">
+            <svg id="apikeyStatusIcon" width="0.88rem" height="0.88rem" viewBox="0 0 48 48" stroke="currentcolor" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="24" cy="24" r="22" stroke-width="4" fill="none"/>
+              <path d="m12 24c0 3 2 5 5 5s5-2 5-5c0-7-10-7-10 0m10 0h14v4h-4v-4h-6" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <p id="apikeyStatusText" role="status" aria-live="polite">Please enter your API key.</p>
+            <button id="apikeyDelete">Delete</button>
+          </div>
+        </main>
+      </details>
     </div>
     <div class="card" id="features">
-      <header class="card-header" aria-hidden="true">
-        <h2>Features</h2>
-      </header>
-      <main class="card-body">
-        <form>
+      <details>
+        <summary class="card-header" aria-hidden="true">Features</summary>
+        <main class="card-body">
           <label for="featuresSubtitles">
             <input type="checkbox" id="featuresSubtitles" name="features" value="subtitles">
             Subtitles and transcript
@@ -62,17 +60,17 @@
             <input type="checkbox" id="featuresKplay" name="features" value="kplay">
             Press k to play/pause
           </label><br>
-          <button id="featuresSave" class="btn-primary" type="submit" aria-label="Save feature settings">Save</button>
-        </form>
-      </main>
-      <footer class="card-footer">
-        <small>Reload the page for changes to take effect.</small>
-      </footer>
+          <button id="featuresSave" class="btn-primary" type="button" aria-label="Save feature settings">Save</button>
+        </main>
+        <footer class="card-footer">
+          <small>
+            <a id="featuresReload">Reload</a> the page for changes to take effect.
+          </small>
+        </footer>
+      </details>
     </div>
     <div class="card" id="feedback">
-      <header class="card-header" aria-hidden="true">
-        <h2>Source Code, Feedback, About</h2>
-      </header>
+      <div class="card-header" aria-hidden="true">Source Code, Feedback, About</div>
       <main class="card-body">
         Visit <a href="https://github.com/C0NZZ/better-teletask">GitHub</a> for more information.
       </main>

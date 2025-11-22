@@ -5,5 +5,5 @@ crawl_results.txt
 *.vtt
 *.pyc
 [0-9]*.txt
-site
+*nogit*
 backend/whisper/logs

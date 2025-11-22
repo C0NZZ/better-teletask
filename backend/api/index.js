@@ -45,6 +45,7 @@ server.get('/sub/:id/:language', async (request, reply) => {
     
     // Return the VTT content directly as text
     reply.header('Content-Type', 'text/vtt; charset=utf-8')
+    reply.header("Access-Control-Allow-Origin", "https://www.tele-task.de");
     return Buffer.from(vttFile.vtt_data).toString('utf-8')
     
   } catch (error) {

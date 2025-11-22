@@ -10,7 +10,10 @@
 }
 
 *{box-sizing:border-box}
-html, body {height:100%}
+html, body {
+  width: max-content;
+  height:max-content;
+}
 body {
   margin:0;
   font-family:var(--font-stack);

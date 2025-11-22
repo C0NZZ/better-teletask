@@ -1,7 +1,7 @@
 {
-  "manifest_version": 3,
+  "manifest_version": 2,
   "name": "Better Tele-Task",
-  "version": "0.3",
+  "version": "0.1",
 
   "description": "Adds useful features like subtitles to HPI Tele-Task.",
 
@@ -14,14 +14,11 @@
   },
 
   "permissions": [
+    "https://btt.makeruniverse.de/*",
     "storage"
   ],
 
-  "host_permissions": [
-    "https://btt.makeruniverse.de/*"
-  ],
-
-  "action": {
+  "browser_action": {
     "default_icon": "icons/32.png",
     "default_title": "Better Tele-Task",
     "default_popup": "popup/popup.html"
@@ -30,10 +27,7 @@
   "content_scripts": [
     {
       "matches": ["https://www.tele-task.de/lecture/video/*"],
-      "js": ["browser-polyfill.min.js",
-        "tweaks.js",
-        "subtitles.js"
-      ]
+      "js": ["browser-polyfill.min.js", "tweaks.js", "subtitles.js"]
     }
   ]
 }

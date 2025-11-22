@@ -71,12 +71,10 @@ h2:nth-child(3) {
 }
 
 .card-body {margin-top:0.8rem}
-.lead {
-  margin:0 0 12px 0;
-  color:var(--muted);
-  font-size:0.92rem;
-}
 
+a {
+  color: var(--ttyellow);
+}
 form > * > *{
   font-family:var(--font-stack);
   font-size:0.95rem;
@@ -107,7 +105,7 @@ form > * > *{
   border-color: rgba(231, 168, 110, 0.22);
 }
 
-.toggle-password {
+#apikeyToggle {
   position: absolute;
   right: 8px;
   top: 50%;
@@ -125,7 +123,7 @@ form > * > *{
   justify-content: center;
   transition: opacity .12s;
 }
-.toggle-password:hover {
+#apikeyToggle:hover {
   opacity: 1;
 }
 

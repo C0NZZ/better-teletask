@@ -32,7 +32,7 @@ server.get('/sub/:id/:language', async (request, reply) => {
     if (!vttFile) {
       if (!language) {
         try {
-          await fetch('http://transcriber:8000/start-checker')
+          await fetch('http://transcriber:8000/prioritize/' + teletaskId, { method: 'POST' })
         } catch (err) {
           console.error('Failed to notify checker:', err)
         }

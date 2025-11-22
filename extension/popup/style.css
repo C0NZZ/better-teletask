@@ -1,7 +1,8 @@
 :root {
-  --bg: #0f1724;
-  --card: #0b1220;
   --accent: #ffba7a;
+  --ttyellow: #f7a600;
+  --ttorange: #de6106;
+  --ttred: #b00835;
   --muted: #bdcadb;
   --glass: rgba(255,255,255,0.04);
   --radius: 12px;
@@ -10,12 +11,17 @@
 }
 
 *{box-sizing:border-box}
-html, body {height:100%}
+html, body {
+  width: max-content;
+  height:max-content;
+}
 body {
   margin:0;
   font-family:var(--font-stack);
-  background: linear-gradient(45deg,#b00634 0%, #dc6006 35%, #dc6006 65%, #f0a102 100%);
+  background: linear-gradient(45deg, var(--ttred) 0%, var(--ttorange) 35%, var(--ttorange) 65%, var(--ttyellow) 100%);
   display:flex;
+  flex-direction: column;
+  gap: 1rem;
   align-items:center;
   justify-content:center;
   padding:18px;
@@ -36,11 +42,22 @@ body {
   backdrop-filter: blur(6px);
 }
 
+h1 {
+  margin:0;
+  font-size:1.2rem;
+  letter-spacing:0.2px;
+}
+h2 {
+  margin:0 0 0 0.3rem;
+  font-size:1.1rem;
+  letter-spacing:0.2px;
+  font-weight: 600;
+}
+
 .card-header {
   display:flex;
   gap:12px;
   align-items:center;
-  margin-bottom:20px;
 }
 .logo {
   width:44px;
@@ -48,17 +65,21 @@ body {
   color:var(--accent);
   flex:0 0 44px;
 }
-.card-header h1 {
-  margin:0;
-  font-size:1.1rem;
-  letter-spacing:0.2px;
+h2:nth-child(3) {
+  margin-left: auto;
+  font-weight: 400;
 }
 
-.card-body {margin-top:6px}
+.card-body {margin-top:0.8rem}
 .lead {
   margin:0 0 12px 0;
   color:var(--muted);
   font-size:0.92rem;
+}
+
+form > * > *{
+  font-family:var(--font-stack);
+  font-size:0.95rem;
 }
 
 .input-group {
@@ -66,21 +87,46 @@ body {
   gap:10px;
   align-items:center;
 }
-#apiKey {
-  flex:1;
-  padding:10px 12px;
+.input-wrapper {
+  position: relative;
+  flex: 1;
+}
+#apikeyInput {
+  width: 100%;
+  padding:10px 40px 10px 12px;
   border-radius:10px;
   border:1px solid rgba(255,255,255,0.04);
   background:var(--glass);
   color:inherit;
   outline:none;
   transition:box-shadow .12s, border-color .12s;
-  font-size:0.95rem;
 }
-#apiKey::placeholder {color: rgba(230,238,246,0.45)}
-#apiKey:focus {
+#apikeyInput::placeholder {color: rgba(230,238,246,0.45)}
+#apikeyInput:focus {
   box-shadow: 0 4px 20px rgba(231, 173, 110, 0.08);
   border-color: rgba(231, 168, 110, 0.22);
+}
+
+.toggle-password {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  padding: 4px 8px;
+  cursor: pointer;
+  opacity: 0.7;
+  visibility: hidden;
+  width: 35px;
+  height: 35px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity .12s;
+}
+.toggle-password:hover {
+  opacity: 1;
 }
 
 .btn-primary {
@@ -98,6 +144,13 @@ body {
 .btn-primary:hover {transform:translateY(-1px); box-shadow: 0 6px 22px rgba(231, 181, 110, 0.06)}
 .btn-primary:active {transform:translateY(0)}
 
+#featuresSave.btn-primary {
+  margin-top: 1rem;
+}
+
+[type="checkbox"] {accent-color: var(--ttyellow);}
+[type="checkbox"]:hover {accent-color: var(--accent);}
+
 .status {
   margin:0.6rem 0 0 0.3rem;
   min-height:1.4em;
@@ -107,11 +160,22 @@ body {
   align-items: center;
   gap: 8px;
 }
-.status p {margin: 0;}
+#apikeyStatusText {margin: 0;}
+#apikeyDelete {
+  margin:0 0.3rem 0 auto;
+  background: none;
+  border: none;
+  padding: 0;
+  color: #f6a09aff;
+  text-decoration: underline;
+  cursor: pointer;
+  font: inherit;
+  visibility: hidden;
+}
 .card-footer {
-  margin-top:10px;
-  border-top:1px solid rgba(255,255,255,0.02);
-  padding-top:6px;
+  margin-top:1rem;
+  border-top:1px solid rgba(255,255,255,0.08);
+  padding-top:5px;
 }
 .card-footer small {color:rgba(212, 220, 229, 0.7)}
 

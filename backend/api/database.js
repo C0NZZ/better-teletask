@@ -62,12 +62,6 @@ async function getClient() {
   return client;
 }
 
-// Example function to get all VTT files
-async function getAllVttFiles() {
-  const result = await query('SELECT id, teletaskid, language, vtt_data FROM vtt_files ORDER BY id');
-  return result.rows;
-}
-
 // Example function to get VTT file by teletask ID and language
 async function getVttFile(teletaskId, language) {
   let result;
@@ -85,6 +79,14 @@ async function getVttFile(teletaskId, language) {
   return result.rows[0];
 }
 
+async function getApiKey(key) {
+  result = await query(
+      'SELECT api_key, expiration_date, status FROM api_keys WHERE api_key = $1 LIMIT 1',
+      [key]
+    );
+  return result.rows[0];
+}
+
 // Graceful shutdown
 process.on('SIGINT', async () => {
   console.log('Closing database pool...');
@@ -97,6 +99,6 @@ module.exports = {
   getClient,
   pool,
   // Export helper functions
-  getAllVttFiles,
   getVttFile,
+  getApiKey,
 };

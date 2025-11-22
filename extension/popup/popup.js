@@ -38,19 +38,23 @@ document.addEventListener('DOMContentLoaded', async () => {
         return;
       }
       await browser.storage.local.set({ apiKey });
+      input.type = "password";
+      statusDiv.style.color = "#77b379ff";
+      statusText.textContent = "API key saved.";
+      statusSym.setAttribute("d", "M14 25l6 6 14-14");
+      deleteBtn.style.visibility = "visible";
+      toggleBtn.style.visibility = "visible";
     });
 
     deleteBtn.addEventListener('click', async () => {
-      if (apiKey) {
-        await browser.storage.local.remove('apiKey');
-        input.value = "";
-        input.type = "text";
-        statusDiv.style.color = "#77b379ff";
-        statusText.textContent = "API key deleted.";
-        statusSym.setAttribute("d", "M14 25l6 6 14-14");
-        deleteBtn.style.visibility = "hidden";
-        toggleBtn.style.visibility = "hidden";
-      }
+      await browser.storage.local.remove('apiKey');
+      input.value = "";
+      input.type = "text";
+      statusDiv.style.color = "#77b379ff";
+      statusText.textContent = "API key deleted.";
+      statusSym.setAttribute("d", "M14 25l6 6 14-14");
+      deleteBtn.style.visibility = "hidden";
+      toggleBtn.style.visibility = "hidden"; toggleBtn.querySelector('line').style.visibility = "hidden";
     });
   }
   {
@@ -58,6 +62,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const doubleclick = document.getElementById('featuresDoubleclick');
     const kplay = document.getElementById('featuresKplay');
     const saveBtn = document.getElementById('featuresSave');
+    const reloadBtn = document.getElementById('featuresReload');
     const { featureSettings } = await browser.storage.local.get('featureSettings');
     
     if (featureSettings) {
@@ -76,6 +81,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         kplay: kplay.checked
       };
       await browser.storage.local.set({ featureSettings });
+    });
+    
+    reloadBtn.addEventListener('click', async (e) => {
+      const tabs = await browser.tabs.query({ active: true, currentWindow: true });
+      if (tabs[0].url.startsWith("https://www.tele-task.de/lecture/video/")) await browser.tabs.reload(tabs[0].id);
     });
   }
 });

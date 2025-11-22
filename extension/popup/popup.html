@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Better Tele-Task</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="../browser-polyfill.min.js"></script>
+  </head>
+
+  <body>
+    <div class="card">
+      <header class="card-header" aria-hidden="true">
+        <img src="../icons/32.png" height="24px">
+        <h1>Better Tele-Task</h1><h2>Settings</h2>
+      </header>
+    </div>
+    <div class="card" id="apikey">
+      <header class="card-header" aria-hidden="true">
+        <h2>API key</h2>
+      </header>
+      <main class="card-body">
+        <label for="apikeyInput" class="visually-hidden">Better Tele-Task API key</label>
+        <form class="input-group">
+          <div class="input-wrapper">
+            <input type="text" id="apikeyInput" placeholder="Better Tele-Task API key" autocomplete="off" required/>
+            <button type="button" id="apikeyToggle" class="toggle-password" aria-label="Toggle password visibility">
+              <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/>
+                <circle cx="12" cy="12" r="3"/>
+                <line style="visibility: hidden" x1="2" y1="3" x2="22" y2="21"/>
+              </svg>
+            </button>
+          </div>
+          <button id="apikeySave" class="btn-primary" type="submit" aria-label="Save API key">Save</button>
+        </form>
+        <div id="apikeyStatus" class="status">
+          <svg id="apikeyStatusIcon" width="0.88rem" height="0.88rem" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="24" cy="24" r="22" stroke="currentcolor" stroke-width="4" fill="none"/>
+            <path d="m12 24c0 3 2 5 5 5s5-2 5-5c0-7-10-7-10 0m10 0h14v4h-4v-4h-6" stroke="currentcolor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <p id="apikeyStatusText" role="status" aria-live="polite">Please enter your API key.</p>
+          <button id="apikeyDelete">Delete</button>
+        </div>
+      </main>
+    </div>
+    <div class="card" id="features">
+      <header class="card-header" aria-hidden="true">
+        <h2>Features</h2>
+      </header>
+      <main class="card-body">
+        <form>
+          <label for="featuresSubtitles">
+            <input type="checkbox" id="featuresSubtitles" name="features" value="subtitles">
+            Subtitles and transcript
+          </label><br>
+          <label for="featuresDoubleclick">
+            <input type="checkbox" id="featuresDoubleclick" name="features" value="doubleclick">
+            Double-click player for fullscreen
+          </label><br>
+          <label for="featuresKplay">
+            <input type="checkbox" id="featuresKplay" name="features" value="kplay">
+            Press k to play/pause
+          </label><br>
+          <button id="featuresSave" class="btn-primary" type="submit" aria-label="Save feature settings">Save</button>
+        </form>
+      </main>
+      <footer class="card-footer">
+        <small>Reload the page for changes to take effect.</small>
+      </footer>
+    </div>
+
+    <script src="popup.js"></script>
+  </body>
+</html>

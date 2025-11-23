@@ -60,6 +60,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const subtitles = document.getElementById('featuresSubtitles');
     const doubleclick = document.getElementById('featuresDoubleclick');
     const kplay = document.getElementById('featuresKplay');
+    const noresizelimit = document.getElementById('featuresNoresizelimit')
     const saveBtn = document.getElementById('featuresSave');
     const reloadBtn = document.getElementById('featuresReload');
     const statusDiv = document.getElementById('featuresStatus');
@@ -78,7 +79,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       const featureSettings = {
         subtitles: subtitles.checked,
         doubleclick: doubleclick.checked,
-        kplay: kplay.checked
+        kplay: kplay.checked,
+        noresizelimit: noresizelimit.checked
       };
       await browser.storage.local.set({ featureSettings });
       statusDiv.style.visibility = "visible";

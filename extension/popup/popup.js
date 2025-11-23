@@ -12,11 +12,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (apiKey) {
       input.value = apiKey;
       input.type = "password";
-      statusDiv.style.color = "#77b379ff";
+      statusDiv.style.color = "var(--success)";
       statusText.textContent = "API key saved.";
       statusSym.setAttribute("d", "M14 25l6 6 14-14");
       deleteBtn.style.visibility = "visible";
-      toggleBtn.style.visibility = "visible";
     }
 
     toggleBtn.addEventListener('click', () => {
@@ -32,29 +31,29 @@ document.addEventListener('DOMContentLoaded', async () => {
     saveBtn.addEventListener('click', async () => {
       const apiKey = input.value.trim();
       if (!apiKey) {
-        statusDiv.style.color = "#f6a09aff";
+        statusDiv.style.color = "var(--error)";
         statusText.textContent = "No key entered.";
         statusSym.setAttribute("d", "M16 16l16 16M32 16l-16 16");
         return;
       }
       await browser.storage.local.set({ apiKey });
       input.type = "password";
-      statusDiv.style.color = "#77b379ff";
+      statusDiv.style.color = "var(--success)";
       statusText.textContent = "API key saved.";
       statusSym.setAttribute("d", "M14 25l6 6 14-14");
       deleteBtn.style.visibility = "visible";
-      toggleBtn.style.visibility = "visible";
+      toggleBtn.querySelector('line').style.visibility = "hidden";
     });
 
     deleteBtn.addEventListener('click', async () => {
       await browser.storage.local.remove('apiKey');
       input.value = "";
       input.type = "text";
-      statusDiv.style.color = "#77b379ff";
+      statusDiv.style.color = "var(--success)";
       statusText.textContent = "API key deleted.";
       statusSym.setAttribute("d", "M14 25l6 6 14-14");
       deleteBtn.style.visibility = "hidden";
-      toggleBtn.style.visibility = "hidden"; toggleBtn.querySelector('line').style.visibility = "hidden";
+      toggleBtn.querySelector('line').style.visibility = "visible";
     });
   }
   {
@@ -63,6 +62,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const kplay = document.getElementById('featuresKplay');
     const saveBtn = document.getElementById('featuresSave');
     const reloadBtn = document.getElementById('featuresReload');
+    const statusDiv = document.getElementById('featuresStatus');
     const { featureSettings } = await browser.storage.local.get('featureSettings');
     
     if (featureSettings) {
@@ -81,6 +81,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         kplay: kplay.checked
       };
       await browser.storage.local.set({ featureSettings });
+      statusDiv.style.visibility = "visible";
     });
     
     reloadBtn.addEventListener('click', async (e) => {

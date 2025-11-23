@@ -60,7 +60,16 @@
             <input type="checkbox" id="featuresKplay" name="features" value="kplay">
             Press k to play/pause
           </label><br>
-          <button id="featuresSave" class="btn-primary" type="button" aria-label="Save feature settings">Save</button>
+          <div class="input-group">
+            <button id="featuresSave" class="btn-primary" type="button" aria-label="Save feature settings">Save</button>
+            <div id="featuresStatus" class="status">
+              <svg id="featuresStatusIcon" width="0.88rem" height="0.88rem" viewBox="0 0 48 48" stroke="currentcolor" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="24" cy="24" r="22" stroke-width="4" fill="none"/>
+                <path d="M14 25l6 6 14-14" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+              <p id="featuresStatusText" role="status" aria-live="polite">Settings saved.</p>
+            </div>
+          </div>
         </main>
         <footer class="card-footer">
           <small>

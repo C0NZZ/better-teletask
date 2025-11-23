@@ -4,6 +4,8 @@
   --ttorange: #de6106;
   --ttred: #b00835;
   --muted: #bdcadb;
+  --success: #77b379;
+  --error: #f6a09a;
   --glass: rgba(255,255,255,0.04);
   --radius: 12px;
   --max-width: 380px;
@@ -151,7 +153,6 @@ input, label {
 [type="checkbox"]:hover {accent-color: var(--accent);}
 
 .status {
-  margin: 0.6rem 0 0 0.3rem;
   min-height: 1.4em;
   color: var(--muted);
   font-size: 0.88rem;
@@ -159,16 +160,22 @@ input, label {
   align-items: center;
   gap: 8px;
 }
+#apikeyStatus {margin: 0.6rem 0 0 0.3rem;}
 #apikeyStatusText {margin: 0;}
 #apikeyDelete {
   margin: 0 0.3rem 0 auto;
   background: none;
   border: none;
   padding: 0;
-  color: #f6a09aff;
+  color: var(--error);
   text-decoration: underline;
   cursor: pointer;
   font: inherit;
+  visibility: hidden;
+}
+#featuresStatus {
+  color: var(--success);
+  margin-left: auto;
   visibility: hidden;
 }
 .card-footer {

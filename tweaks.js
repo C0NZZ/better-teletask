@@ -10,9 +10,22 @@
       subtitles: true,
       doubleclick: true,
       kplay: true,
+      noresizelimit: true,
     }
     await browser.storage.local.set({ featureSettings });
   }
+
+  if (featureSettings?.noresizelimit) {
+    const script = document.createElement('script');
+    script.textContent = `
+        const videoPlayer = document.querySelector('video-player');
+        const dualStream = videoPlayer.shadowRoot.querySelector('dual-stream');
+        dualStream._ensureWidthPercentage = (percentage) => Math.max(0, Math.min(1, percentage));
+    `;
+    
+    (document.head || document.documentElement).appendChild(script);
+    script.remove();
+  };
   
   //doubleclick -> fullscreen
   document.addEventListener('dblclick', e=>{

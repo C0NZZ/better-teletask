@@ -397,6 +397,38 @@ def get_all_vtt_blobs():
             cur.close()
             conn.close()
 
+def get_original_vtt_by_id(teletaskid):
+    conn = None
+    try:
+        # --- Connect to PostgreSQL ---
+        conn = psycopg2.connect(
+            dbname=DB_NAME, user=DB_USER, password=DB_PASS, host=DB_HOST, port=DB_PORT
+        )
+        cur = conn.cursor()
+
+        # --- Query all records ---
+        cur.execute(
+            "SELECT vtt_data FROM vtt_files WHERE teletaskid = %s AND isOriginalLang = TRUE;",
+            (teletaskid,),
+        )
+        row = cur.fetchone()
+        if row:
+            vtt_data = row[0]
+            vtt_bytes = bytes(vtt_data)
+            vtt_content = vtt_bytes.decode("utf-8")
+            return vtt_content
+        else:
+            print(f"No original VTT found for Teletask ID: {teletaskid}")
+            return None
+
+    except (Exception, psycopg2.Error) as error:
+        print("Error while querying PostgreSQL", error)
+        return None
+    finally:
+        if conn:
+            cur.close()
+            conn.close()
+
 def original_language_exists(teletaskid):
     conn = None
     try:
@@ -435,14 +467,14 @@ def databaseTestScript():
 
 
 if __name__ == "__main__":
-    clearDatabase()
-    #initDatabase()
+    #clearDatabase()
+    initDatabase()
     #save_vtt_as_blob(11408, "de", True)
     #save_vtt_as_blob(11408, "en", False)
-    #save_vtt_as_blob(11402, "de", True)
+    save_vtt_as_blob(11402, "de", True)
     #save_vtt_as_blob(11402, "en", False)
     #add_id_to_blacklist(11406, "404")
-    #get_all_vtt_blobs()
+    get_all_vtt_blobs()
     # get_all_vtt_blobs()
     # databaseTestScript()
     #getHighestTeletaskID()

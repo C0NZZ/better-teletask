@@ -13,7 +13,7 @@ script_dir = os.path.dirname(os.path.abspath(__file__))
 input_path = os.path.join(script_dir, "input/")
 output_path = os.path.join(script_dir, "output/")
 compute_type = COMPUTE_TYPE
-device = "cpu"
+device = "cuda"
 
 model = whisperx.load_model(MODEL, device=device, compute_type=compute_type)
 

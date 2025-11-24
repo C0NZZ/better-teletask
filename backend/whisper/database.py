@@ -69,7 +69,10 @@ def initDatabase():
                 teletaskid INTEGER PRIMARY KEY,
                 reason VARCHAR(255),
                 times_tried INTEGER DEFAULT 1
-            )
+            );
+
+            CREATE INDEX IF NOT EXISTS idx_vtt_files_teletaskid ON vtt_files (teletaskid);
+
             """)
 
     except (Exception, psycopg2.Error) as error:
@@ -436,7 +439,7 @@ def databaseTestScript():
 
 if __name__ == "__main__":
     clearDatabase()
-    #initDatabase()
+    initDatabase()
     #save_vtt_as_blob(11408, "de", True)
     #save_vtt_as_blob(11408, "en", False)
     #save_vtt_as_blob(11402, "de", True)

@@ -3,7 +3,7 @@ import os
 from dotenv import load_dotenv
 import re
 from typing import List, Dict, Any, Optional, Tuple
-from database import get_original_vtt_by_id
+from database import get_original_vtt_by_id, get_original_language_by_id
 
 load_dotenv()
 
@@ -236,10 +236,16 @@ def save_vtt_file(file_path: str, header: str, content_blocks: List[str]) -> Non
     with open(file_path, "w", encoding="utf-8") as f:
         f.write(final_output)
 
-def run_translation_workflow(config: Dict[str, Any]) -> None:
+def run_translation_workflow(id: int, to_langauge: str, from_lanuage: Optional[str]) -> None:
     """Orchestrates the translation with full pre- and post-processing."""
-    print(f"--- Starting translation for {config['input_file']} ---")
+    
+    print(f"--- Starting translation for {id} to {to_langauge} ---")
 
+    if from_lanuage is None:
+        from_language = get_original_language_by_id(id)
+
+    config: Dict[str, Any] = generate_config(id, from_language, to_langauge, ollama_url, model_name)
+    print(f"Configuration: {config}")
     try: 
         raw_content: str = get_original_translation(config)
     except Exception as e:
@@ -248,7 +254,7 @@ def run_translation_workflow(config: Dict[str, Any]) -> None:
         #TODO maybe raise this
         #TODO definetly log this
         return
-
+    
     # 1. Parse and Separate Header
     header, blocks = parse_vtt_blocks(raw_content)
 
@@ -299,5 +305,4 @@ def run_translation_workflow(config: Dict[str, Any]) -> None:
     print(f"--- Process Complete. Saved to {config['output_file']} ---")
 
 if __name__ == "__main__":
-    config: Dict[str, Any] = generate_config(11402, "de", "en", ollama_url, model_name)
-    run_translation_workflow(config)
+    run_translation_workflow(11402, "en", None)

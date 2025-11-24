@@ -8,6 +8,7 @@ load_dotenv(find_dotenv())
 
 OUTPUTFOLDER = os.environ.get("VTT_DEST_FOLDER")
 MODEL = os.environ.get("ASR_MODEL")
+COMPUTE_TYPE = os.environ.get("COMPUTE_TYPE")
 # print(OUTPUTFOLDER)
 
 script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -54,6 +55,7 @@ def initDatabase():
                 vtt_data BYTEA NOT NULL,
                 txt_data BYTEA NOT NULL,
                 asr_model VARCHAR(255),
+                compute_type VARCHAR(255),
                 creation_date TIMESTAMP DEFAULT NOW()
             );
             CREATE TABLE IF NOT EXISTS api_keys (
@@ -177,7 +179,7 @@ def save_vtt_as_blob(teletaskid, language, isOriginalLang):
             txt_binary_data = f.read()
 
         cur.execute(
-            "INSERT INTO vtt_files (teletaskid,language,isOriginalLang,vtt_data,txt_data,asr_model) VALUES (%s,%s,%s,%s,%s,%s);",
+            "INSERT INTO vtt_files (teletaskid,language,isOriginalLang,vtt_data,txt_data,asr_model,compute_type) VALUES (%s,%s,%s,%s,%s,%s,%s);",
             (
                 teletaskid,
                 language,
@@ -185,6 +187,7 @@ def save_vtt_as_blob(teletaskid, language, isOriginalLang):
                 vtt_binary_data,
                 txt_binary_data,
                 MODEL,
+                COMPUTE_TYPE,
             ),
         )
 
@@ -358,14 +361,14 @@ def get_all_vtt_blobs():
 
         # --- Query all records ---
         cur.execute(
-            "SELECT id, teletaskid, language,isOriginalLang, vtt_data, txt_data FROM vtt_files ORDER BY id;"
+            "SELECT id, teletaskid, language,isOriginalLang, vtt_data, txt_data, compute_type FROM vtt_files ORDER BY id;"
         )
         rows = cur.fetchall()
 
         print(f"\n=== Found {len(rows)} VTT file(s) in database ===\n")
 
         for row in rows:
-            record_id, teletaskid, language, isOriginalLang, vtt_data, txt_data = (
+            record_id, teletaskid, language, isOriginalLang, vtt_data, txt_data, compute_type = (
                 row
             )
             print(f"--- Record ID: {record_id} ---")
@@ -373,6 +376,7 @@ def get_all_vtt_blobs():
             print(f"Language: {language}")
             print(f"Is Original Language: {isOriginalLang}")
             print(f"VTT Data (size): {len(vtt_data)} bytes")
+            print(f"Compute Type: {compute_type}")
             print(f"VTT Content:")
             print("-" * 50)
             # Convert memoryview to bytes, then decode to string for display
@@ -440,13 +444,13 @@ def databaseTestScript():
 if __name__ == "__main__":
     clearDatabase()
     initDatabase()
-    #save_vtt_as_blob(11408, "de", True)
+    save_vtt_as_blob(11408, "de", True)
     #save_vtt_as_blob(11408, "en", False)
     #save_vtt_as_blob(11402, "de", True)
     #save_vtt_as_blob(11402, "en", False)
     #add_id_to_blacklist(11406, "404")
     #get_all_vtt_blobs()
-    # get_all_vtt_blobs()
+    get_all_vtt_blobs()
     # databaseTestScript()
     #getHighestTeletaskID()
     #getSmallestTeletaskID()

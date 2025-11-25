@@ -9,8 +9,8 @@
     const featureSettings = {
       subtitles: true,
       doubleclick: true,
-      kplay: true,
       noresizelimit: true,
+      kplay: true,
     }
     await browser.storage.local.set({ featureSettings });
   }

@@ -48,17 +48,17 @@ header {
   display: flex;
   gap: 12px;
   align-items: center;
-  margin: 0 0 0 0.3rem;
-  letter-spacing: 0.2px;
+  min-width: 19.5rem;
 }
 h1 {
   margin: 0;
   font-size: 1.1rem;
-  font-weight: 600;
+  font-weight: 700;
+  letter-spacing: 0.4px;
 }
 h2 {
   margin: 0 0 0 auto;
-  font-size: 1rem;
+  font-size: 1.1rem;
   font-weight: 400;
 }
 .card-header {
@@ -74,7 +74,7 @@ h2 {
 }
 
 .card-body {margin-top:0.6rem}
-
+summary {cursor: pointer;}
 a {
   color: var(--ttyellow);
   text-decoration: underline;

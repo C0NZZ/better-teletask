@@ -7,6 +7,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const saveBtn = document.getElementById('apikeySave');
     const deleteBtn = document.getElementById('apikeyDelete');
     const toggleBtn = document.getElementById('apikeyToggle');
+    const details = document.getElementById('apikey').querySelector('details')
 
     const { apiKey } = await browser.storage.local.get('apiKey');
     if (apiKey) {
@@ -16,7 +17,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       statusText.textContent = "API key saved.";
       statusSym.setAttribute("d", "M14 25l6 6 14-14");
       deleteBtn.style.visibility = "visible";
-    }
+    } else {details.open = true}
 
     toggleBtn.addEventListener('click', () => {
       if (input.type === "password") {
@@ -59,8 +60,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   {
     const subtitles = document.getElementById('featuresSubtitles');
     const doubleclick = document.getElementById('featuresDoubleclick');
-    const kplay = document.getElementById('featuresKplay');
     const noresizelimit = document.getElementById('featuresNoresizelimit')
+    const kplay = document.getElementById('featuresKplay');
     const saveBtn = document.getElementById('featuresSave');
     const reloadBtn = document.getElementById('featuresReload');
     const statusDiv = document.getElementById('featuresStatus');
@@ -79,8 +80,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       const featureSettings = {
         subtitles: subtitles.checked,
         doubleclick: doubleclick.checked,
+        noresizelimit: noresizelimit.checked,
         kplay: kplay.checked,
-        noresizelimit: noresizelimit.checked
       };
       await browser.storage.local.set({ featureSettings });
       statusDiv.style.visibility = "visible";

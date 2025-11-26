@@ -64,16 +64,17 @@ def initDatabase():
                 person_name VARCHAR(255),
                 person_email VARCHAR(255),
                 creation_date TIMESTAMP DEFAULT NOW(),
-                expiration_date TIMESTAMP,
+                expiration_date TIMESTAMP DEFAULT (NOW() + INTERVAL '3 months'),
                 status VARCHAR(255) DEFAULT 'active'
             );
-            CREATE TABLE IF NOT EXISTS blacklist_ids(
+            CREATE TABLE IF NOT EXISTS blacklist_ids (
                 teletaskid INTEGER PRIMARY KEY,
                 reason VARCHAR(255),
                 times_tried INTEGER DEFAULT 1
             );
 
             CREATE INDEX IF NOT EXISTS idx_vtt_files_teletaskid ON vtt_files (teletaskid);
+            CREATE INDEX IF NOT EXISTS idx_api_keys_api_key ON api_keys (api_key);
 
             """)
 

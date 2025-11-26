@@ -25,6 +25,7 @@ services:
     build: ./api
     volumes:
       - ./.env:/node/.env:ro
+      - ./api/logs:/node/logs
     ports:
     - "80:80"
     depends_on:

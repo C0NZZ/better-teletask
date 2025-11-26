@@ -4,7 +4,36 @@ import { createRequire } from 'module'
 const require = createRequire(import.meta.url)
 const db = require('./database.js')
 
-const server = fastify()
+const server = fastify({
+  logger: {
+    level: 'info',
+    transport: {
+      target: 'pino/file',
+      options: { 
+        destination: './logs/access.log',
+        mkdir: true
+      }
+    },
+    serializers: {
+      req(request) {
+        return {
+          method: request.method,
+          url: request.url,
+          ip: request.ip,
+          userAgent: request.headers['user-agent'] || '-',
+          referer: request.headers.referer || '-',
+          auth: request.headers.authorization || '-'
+        }
+      },
+      res(reply) {
+        return {
+          statusCode: reply.statusCode,
+          contentLength: reply.getHeader('content-length') || '-'
+        }
+      }
+    }
+  }
+})
 
 server.get('/ping', async (request, reply) => {
   return 'pong\n'
@@ -16,45 +45,25 @@ server.get('/', async (request, reply) => {
 
 async function verifyAuthHeader(request, reply) {
   const authHeader = request.headers['authorization'];
-  if (!authHeader) {
-    reply.code(401).send({ error: 'Missing Authorization header' });
-    return;
+  if (!authHeader) {return reply.code(401).send({ error: 'Missing Authorization header' });}
+  else {
+    const token = authHeader.replace('Bearer ', '').trim();
+    if (!token) {return reply.code(401).send({ error: 'Invalid Authorization header' });}
+    else {
+      const apiKey = await db.getApiKey(token);
+      if (!apiKey) {return reply.code(401).send({ error: 'Invalid API key' });}
+      else if (apiKey.status === 'revoked') {return reply.code(403).send({ error: 'API key has been revoked' });}
+      else if (apiKey.status === 'expired') {return reply.code(403).send({ error: 'API key has expired' });}
+      else if (apiKey.status !== 'active') {return reply.code(403).send({ error: 'API key is not active' });}
+      else {
+        const now = new Date();
+        const expiration = new Date(apiKey.expiration_date);
+        if (expiration < now) {return reply.code(403).send({ error: 'API key has expired' });}
+        // brauchen wir den key später noch? dann hier:
+        // request.apiKey = apiKey;
+      }
+    }
   }
-
-  const token = authHeader.replace('Bearer ', '').trim();
-  if (!token) {
-    reply.code(401).send({ error: 'Invalid Authorization header' });
-    return;
-  }
-
-  const apiKey = await db.getApiKey(token);
-  if (!apiKey) {
-    reply.code(401).send({ error: 'Invalid API key' });
-    return;
-  }
-
-  if (apiKey.status == 'revoked') {
-    reply.code(403).send({ error: 'API key has been revoked' });
-    return;
-  }
-  if (apiKey.status == 'expired') {
-    reply.code(403).send({ error: 'API key has expired' });
-    return;
-  }
-  if (apiKey.status !== 'active') {
-    reply.code(403).send({ error: 'API key is not active' });
-    return;
-  }
-
-  const now = new Date();
-  const expiration = new Date(apiKey.expiration_date);
-  if (expiration < now) {
-    reply.code(403).send({ error: 'API key has expired' });
-    return;
-  }
-
-  // brauchen wir den key später noch? dann hier:
-  request.apiKey = apiKey;
 }
 
 server.get('/sub/:id/:language', { preHandler: verifyAuthHeader }, async (request, reply) => {
@@ -86,7 +95,6 @@ server.get('/sub/:id/:language', { preHandler: verifyAuthHeader }, async (reques
       })
     }
     
-    // Return the VTT content directly as text
     reply.header('Content-Type', 'text/vtt; charset=utf-8')
     reply.header("Access-Control-Allow-Origin", "https://www.tele-task.de");
     return Buffer.from(vttFile.vtt_data).toString('utf-8')

@@ -70,7 +70,8 @@ def initDatabase():
             CREATE TABLE IF NOT EXISTS blacklist_ids (
                 teletaskid INTEGER PRIMARY KEY,
                 reason VARCHAR(255),
-                times_tried INTEGER DEFAULT 1
+                times_tried INTEGER DEFAULT 1,
+                creation_date TIMESTAMP DEFAULT NOW()
             );
 
             CREATE INDEX IF NOT EXISTS idx_vtt_files_teletaskid ON vtt_files (teletaskid);
@@ -188,7 +189,7 @@ def save_vtt_as_blob(teletaskid, language, isOriginalLang):
                 vtt_binary_data,
                 txt_binary_data,
                 MODEL,
-                COMPUTE_TYPE,
+                COMPUTE_TYPE
             ),
         )
 
@@ -459,5 +460,3 @@ if __name__ == "__main__":
     #get_missing_translations()
     #get_missing_available_ids()
     #print(original_language_exists(11409))
-
-

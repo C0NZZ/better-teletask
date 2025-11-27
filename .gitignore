@@ -7,3 +7,4 @@ crawl_results.txt
 [0-9]*.txt
 *nogit*
 backend/whisper/logs
+*.pem

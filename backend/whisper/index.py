@@ -222,6 +222,7 @@ async def process_queues():
 
 async def transcribe_worker():
     """Worker that continuously processes IDs from the queues."""
+    sleep_time = 40
     await asyncio.sleep(10)  # Initial delay before starting
     print("Transcribe worker started.")
     while True:
@@ -237,11 +238,12 @@ async def transcribe_worker():
                 print(f"Transcription failed for ID {id}: {e}")
             # await asyncio.sleep(1000)
         else:
-            print("No IDs available to transcribe, waiting...")
-            await asyncio.sleep(60)  # Wait before checking again
+            print(f"No IDs available to transcribe, waiting {sleep_time} seconds...")
+            await asyncio.sleep(sleep_time)  # Wait before checking again
         
 async def update_upper_ids_periodically():
     """Periodically update the forward queue with new upper IDs."""
+    sleep_time = 1200
     await asyncio.sleep(5)
     while True:
         print("Updating upper IDs...")
@@ -251,11 +253,12 @@ async def update_upper_ids_periodically():
                 if not await forward_queue.contains_unlocked(uid):
                     print(f"Adding new upper ID to forward queue: {uid}")
                     await forward_queue.add_unlocked(uid)
-        print("Upper IDs update complete. Sleeping for 10 minutes.")
-        await asyncio.sleep(180)  # Sleep for 10 minutes before checking again
+        print(f"Upper IDs update complete. Sleeping for {sleep_time // 60} minutes.")
+        await asyncio.sleep(sleep_time)
 
 async def update_inbetween_ids_periodically():
     """Periodically update the in-between queue with missing IDs."""
+    sleep_time = 1200
     await asyncio.sleep(30)
     while True:
         print("Updating in-between IDs...")
@@ -268,8 +271,8 @@ async def update_inbetween_ids_periodically():
                         print(f"Removing ID {mid} from backward queue as it's now in in-between queue.")
                         await backward_queue.remove_unlocked(mid)
             await in_between_queue.sort_reverse()
-        print("In-between IDs update complete. Sleeping for 10 minutes.")
-        await asyncio.sleep(180) 
+        print(f"In-between IDs update complete. Sleeping for {sleep_time // 60} minutes.")
+        await asyncio.sleep(sleep_time) 
 
 @contextlib.asynccontextmanager
 async def lifespan(app: FastAPI):

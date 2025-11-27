@@ -32,7 +32,7 @@ def fetchMP4(id) -> str:
     cookies = {"username": USERNAME_COOKIE}
     url = baseurl + id
     print("requesting "+url)
-    response = requests.get(url, cookies=cookies, verify=False)
+    response = requests.get(url, cookies=cookies, verify='chain.pem')
     response.raise_for_status()
 
     soup = BeautifulSoup(response.text, "html.parser")
@@ -112,7 +112,7 @@ def pingVideoByID(id) -> str:
     cookies = {"username": USERNAME_COOKIE}
     try:
         print("requesting "+url)
-        response = requests.get(url, cookies=cookies, verify=False)
+        response = requests.get(url, cookies=cookies, verify='chain.pem')
         if(response.status_code == 200):
             print("200, Video exists")
             return "200"
@@ -156,7 +156,7 @@ def get_upper_ids():
 def downloadMP4(url, id):
     print(f"Downloading: {url}")
     try:
-        mp4_response = requests.get(url, stream=True, verify=False)
+        mp4_response = requests.get(url, stream=True, verify='chain.pem')
         mp4_response.raise_for_status()
         total_size = int(mp4_response.headers.get('content-length', 0))
         with open(baseinput+str(id)+".mp4", "wb") as f, tqdm(

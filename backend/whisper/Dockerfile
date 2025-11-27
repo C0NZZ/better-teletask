@@ -23,7 +23,7 @@ RUN pip install \
     torchaudio==2.4.0+cu124 \
     --index-url https://download.pytorch.org/whl/cu124
 
-COPY crawlnewids.py database.py index.py krabbler.py logger.py whisper.py ./
+COPY crawlnewids.py database.py index.py krabbler.py logger.py whisper.py chain.pem ./
 
 ENV HF_HOME=${HF_HOME:-/models/huggingface} \
     TORCH_HOME=${TORCH_HOME:-/models/torch} \

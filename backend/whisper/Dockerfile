@@ -2,17 +2,7 @@ FROM python:3.11-trixie
 
 WORKDIR /whisper
 
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    ffmpeg \
-    pkg-config \
-    build-essential \
-    libavformat-dev \
-    libavcodec-dev \
-    libavdevice-dev \
-    libavutil-dev \
-    libavfilter-dev \
-    libswscale-dev \
-    libswresample-dev
+RUN apt-get update && apt-get install -y --no-install-recommends ffmpeg
 
 COPY requirements.txt ./
 

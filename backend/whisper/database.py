@@ -194,7 +194,7 @@ def save_vtt_as_blob(teletaskid, language, isOriginalLang):
         )
 
         conn.commit()
-        print(f"Successfully saved '{file_path}' as a BLOB.")
+        print(f"Successfully saved '{file_path}' as BLOB.")
 
     except (Exception, psycopg2.Error) as error:
         print("Error while connecting to PostgreSQL", error)

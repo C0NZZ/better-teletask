@@ -61,6 +61,10 @@ class AsyncQueue:
         """Remove and return the first item (FIFO)."""
         async with self._lock:
             return self._queue.popleft() if self._queue else None
+    async def sort_reverse(self):
+        """Sort the queue in reverse order."""
+        async with self._lock:
+            self._queue = deque(sorted(self._queue, reverse=True))
 
     # ----------------------
     # Unlocked (non-blocking) methods
@@ -97,6 +101,9 @@ class AsyncQueue:
     async def dequeue_unlocked(self) -> Optional[str]:
         """Remove and return first item without lock."""
         return self._queue.popleft() if self._queue else None
+    async def sort_reverse_unlocked(self):
+        """Sort the queue in reverse order without lock."""
+        self._queue = deque(sorted(self._queue, reverse=True))
 
 @contextlib.asynccontextmanager
 async def double_lock(queue_a: AsyncQueue, queue_b: AsyncQueue):
@@ -270,7 +277,7 @@ async def update_inbetween_ids_periodically():
                     if await backward_queue.contains_unlocked(mid):
                         print(f"Removing ID {mid} from backward queue as it's now in in-between queue.")
                         await backward_queue.remove_unlocked(mid)
-            await in_between_queue.sort_reverse()
+            await in_between_queue.sort_reverse_unlocked()
         print(f"In-between IDs update complete. Sleeping for {sleep_time // 60} minutes.")
         await asyncio.sleep(sleep_time) 
 

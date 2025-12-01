@@ -30,7 +30,7 @@ def transcribeVideoByID(id):
         audio = whisperx.load_audio(file_path)
 
         result = model.transcribe(audio)
-        print(result["segments"])
+        # print(result["segments"])
 
         # Save the language before alignment
         language = result.get("language")
@@ -40,7 +40,7 @@ def transcribeVideoByID(id):
         model_a, metadata = whisperx.load_align_model(language_code=language, device=device)
         aligned_result = whisperx.align(result["segments"], model_a, metadata, audio, device=device, return_char_alignments=False)
 
-        print(aligned_result["segments"])
+        # print(aligned_result["segments"])
 
         # Add language back to aligned result for the writer
         aligned_result["language"] = language

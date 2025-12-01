@@ -17,6 +17,10 @@ BTT also adds some quality-of-life features to the Tele-Task player to make it m
 - You can resize both of the videos (camera and screen recording) to 100% width, effectively allowing a fullscreen view of one of the videos
 - Pressing "k" on your keyboard pauses/plays the video, like on YouTube
 
+## FAQ
+
+If you have any more questions, please consult our [FAQ](https://github.com/C0NZZ/better-teletask/wiki/FAQ) or contact us directly.
+
 ## Disclaimer
 
 BTT is an independent, unofficial project and is not affiliated with, endorsed by, sponsored by, or approved by the Tele‑Task project or its developers. Teletask and the Tele‑Task logo are registered trademarks of Hasso‑Plattner‑Institut für Digital Engineering gGmbH.

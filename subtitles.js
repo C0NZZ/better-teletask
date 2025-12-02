@@ -79,7 +79,7 @@
   function decodeHtmlEntities(str) {
     if (!str || typeof str !== 'string') return str;
     const txt = document.createElement('textarea');
-    txt.innerHTML = str;
+    txt.textContent = str;
     return txt.value;
   }
 

@@ -86,6 +86,132 @@ def initDatabase():
             cur.close()
             conn.close()
 
+def add_api_key(api_key, person_name, person_email):
+    conn = None
+    try:
+        # --- Connect to PostgreSQL ---
+        conn = psycopg2.connect(
+            dbname=DB_NAME, user=DB_USER, password=DB_PASS, host=DB_HOST, port=DB_PORT
+        )
+        cur = conn.cursor()
+
+        print(f"Adding API key for {person_name} ({person_email})")
+
+        cur.execute(
+            "INSERT INTO api_keys (api_key, person_name, person_email) VALUES (%s, %s, %s) ON CONFLICT (api_key) DO NOTHING;",
+            (api_key, person_name, person_email),
+        )
+
+        conn.commit()
+        print(f"Successfully added API key for {person_name}.")
+
+    except (Exception, psycopg2.Error) as error:
+        print("Error while connecting to PostgreSQL", error)
+    finally:
+        if conn:
+            cur.close()
+            conn.close()
+
+
+def get_api_key_by_name(person_name):
+    conn = None
+    try:
+        # --- Connect to PostgreSQL ---
+        conn = psycopg2.connect(
+            dbname=DB_NAME, user=DB_USER, password=DB_PASS, host=DB_HOST, port=DB_PORT
+        )
+        cur = conn.cursor()
+
+        # --- Query record ---
+        cur.execute(
+            "SELECT api_key, person_name, person_email, creation_date, expiration_date, status FROM api_keys WHERE person_name = %s;",
+            (person_name,),
+        )
+        rows = cur.fetchall()
+
+        api_key_info = []
+        for row in rows:
+            api_key_info.append({
+                "api_key": row[0],
+                "person_name": row[1],
+                "person_email": row[2],
+                "creation_date": row[3],
+                "expiration_date": row[4],
+                "status": row[5]
+            })
+        if api_key_info:
+            return api_key_info
+        else:
+            print(f"No API key found for person name: {person_name}")
+            return None
+
+    except (Exception, psycopg2.Error) as error:
+        print("Error while querying PostgreSQL", error)
+        return None
+    finally:
+        if conn:
+            cur.close()
+            conn.close()
+
+def get_all_api_keys():
+    conn = None
+    try:
+        # --- Connect to PostgreSQL ---
+        conn = psycopg2.connect(
+            dbname=DB_NAME, user=DB_USER, password=DB_PASS, host=DB_HOST, port=DB_PORT
+        )
+        cur = conn.cursor()
+
+        # --- Query all records ---
+        cur.execute("SELECT api_key, person_name, person_email, creation_date, expiration_date, status FROM api_keys;")
+        rows = cur.fetchall()
+
+        api_keys = []
+        for row in rows:
+            api_key_info = {
+                "api_key": row[0],
+                "person_name": row[1],
+                "person_email": row[2],
+                "creation_date": row[3],
+                "expiration_date": row[4],
+                "status": row[5]
+            }
+            api_keys.append(api_key_info)
+
+        return api_keys
+
+    except (Exception, psycopg2.Error) as error:
+        print("Error while querying PostgreSQL", error)
+        return []
+    finally:
+        if conn:
+            cur.close()
+            conn.close()
+
+def remove_api_key(api_key):
+    conn = None
+    try:
+        # --- Connect to PostgreSQL ---
+        conn = psycopg2.connect(
+            dbname=DB_NAME, user=DB_USER, password=DB_PASS, host=DB_HOST, port=DB_PORT
+        )
+        cur = conn.cursor()
+
+        print(f"Removing API key: {api_key}")
+
+        cur.execute(
+            "DELETE FROM api_keys WHERE api_key = %s;",
+            (api_key,)
+        )
+        conn.commit()
+        print(f"Successfully removed API key: {api_key}")
+
+    except (Exception, psycopg2.Error) as error:
+        print("Error while connecting to PostgreSQL", error)
+    finally:
+        if conn:
+            cur.close()
+            conn.close()
 
 def clearDatabase():
     try:

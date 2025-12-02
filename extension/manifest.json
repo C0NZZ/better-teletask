@@ -34,10 +34,11 @@
 
   "browser_specific_settings": {
     "gecko": {
-      "id": "{btt02025-3d0e-429e-a36e-24aabb89fa46}",
+      "id": "{dc4e1e72-761b-420d-ba9b-d6e69fb18d86}",
       "data_collection_permissions": {
         "required": ["authenticationInfo"]
-      }
+      },
+      "update_url": "https://raw.githubusercontent.com/C0NZZ/better-teletask/refs/heads/main/extension/manifest.json"
     }
   }
 }

@@ -140,15 +140,17 @@ forward_queue = AsyncQueue()
 in_between_queue = AsyncQueue()
 backward_queue = AsyncQueue()
 
+in_process_queue = AsyncQueue()
+
 # new ids worker
 async def worker_check_new_ids():
     """Check for new IDs and add them to the priority queue."""
     upper_ids = get_upper_ids()
     print("Checking for new IDs to add to priority queue...")
-    async with multi_lock([prio_queue, forward_queue]):
+    async with multi_lock([prio_queue, forward_queue, in_between_queue]):
         for uid in upper_ids:
             print(f"Checking ID: {uid}")
-            if not await prio_queue.contains_unlocked(uid) and not await forward_queue.contains_unlocked(uid):
+            if not await prio_queue.contains_unlocked(uid) and not await forward_queue.contains_unlocked(uid) and not await in_between_queue.contains_unlocked(uid):
                 print(f"Adding new ID to priority queue: {uid}")
                 await forward_queue.add_unlocked(uid)
     print("New IDs check complete.")
@@ -184,6 +186,10 @@ async def get_id_for_worker() -> Optional[int]:
             return await get_id_for_worker()
         elif res == "200":
             print(f"Fetched ID {id} from queue {from_queue}")
+            # call a set timeout function that will add the id to in_process_queue and remove it after some time
+            await in_process_queue.add_unlocked(id)
+            asyncio.create_task(remove_id_from_in_process(id))
+
             return id
         else:
             print(f"ID {id} from queue {from_queue} not available (response: {res}), trying next ID.")
@@ -191,41 +197,25 @@ async def get_id_for_worker() -> Optional[int]:
     else:
         return None
 
+async def remove_id_from_in_process(id: int):
+    """Remove an ID from the in-process queue."""
+    print(f"ID {id} will be removed from in-process queue after timeout.")
+    await asyncio.sleep(1200)  # wait 20 minutes
+    print(f"Removing ID {id} from in-process queue.")
+    await in_process_queue.remove(id)
+
 async def worker_check_inbetween_ids():
     """Check for missing in-between IDs and add them to the in-between queue."""
     missing_ids = get_missing_available_inbetween_ids()
     print("Checking for missing in-between IDs...")
-    async with in_between_queue._lock:
+    async with multi_lock([in_between_queue._lock, backward_queue._lock, in_process_queue._lock, forward_queue._lock, prio_queue._lock]):
         for mid in missing_ids:
             print(f"Checking ID: {mid}")
-            if not await in_between_queue.contains_unlocked(mid):
+            if not await in_between_queue.contains_unlocked(mid) and not await backward_queue.contains_unlocked(mid) and not await in_process_queue.contains_unlocked(mid) and not await forward_queue.contains_unlocked(mid) and not await prio_queue.contains_unlocked(mid):
                 print(f"Adding missing in-between ID to queue: {mid}")
                 await in_between_queue.add_unlocked(mid)
     print("Missing in-between IDs check complete.")
     return
-
-
-async def process_queues():
-    """Process IDs from the three queues in order of priority."""
-    while True:
-        id_to_process = None
-        async with multi_lock([prio_queue, forward_queue]):
-            if await prio_queue.peek() is not None:
-                id_to_process = await prio_queue.dequeue()
-            elif await forward_queue.peek() is not None:
-                id_to_process = await forward_queue.dequeue()
-        
-        if id_to_process is None:
-            async with in_between_queue._lock:
-                if await in_between_queue.peek() is not None:
-                    id_to_process = await in_between_queue.dequeue()
-        
-        if id_to_process is not None:
-            print(f"Processing ID: {id_to_process}")
-            # Here you would call the actual processing function, e.g.:
-            # await process_id(id_to_process)
-        else:
-            await asyncio.sleep(1)  # No IDs to process, wait before checking again
 
 async def transcribe_worker():
     """Worker that continuously processes IDs from the queues."""
@@ -334,11 +324,13 @@ async def get_queues():
     forward = await forward_queue.get_all()
     in_between = await in_between_queue.get_all()
     backward = await backward_queue.get_all()
+    in_process = await in_process_queue.get_all()
     return {
         "priority_queue": prio,
         "forward_queue": forward,
         "in_between_queue": in_between,
-        "backward_queue": backward
+        "backward_queue": backward,
+        "in_process_queue": in_process
     }
 
 @app.get("/ping")
@@ -349,7 +341,10 @@ async def ping_pong():
 async def prioritize_id(id: int):
     res = pingVideoByID(str(id))
     if res == "200":
-        async with multi_lock([prio_queue, forward_queue, in_between_queue, backward_queue]):
+        async with multi_lock([prio_queue, forward_queue, in_between_queue, backward_queue, in_process_queue]):
+            if await in_process_queue.contains_unlocked(id):
+                print(f"ID {id} is currently being processed; cannot prioritize.")
+                return {"message": f"ID {id} is currently being processed; cannot prioritize."}
             if await prio_queue.contains_unlocked(id):
                 print(f"ID {id} is already in priority queue.")
                 return {"message": f"ID {id} was already prioritized."}

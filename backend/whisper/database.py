@@ -38,7 +38,7 @@ def initDatabase():
             CREATE TABLE IF NOT EXISTS lecture_data (
                 teletaskid INTEGER PRIMARY KEY,
                 originalLang VARCHAR(50),
-                date TIMESTAMP,
+                date TIMESTAMPTZ,
                 lecturer VARCHAR(255),
                 semester VARCHAR(50),
                 duration INTERVAL,
@@ -56,22 +56,22 @@ def initDatabase():
                 txt_data BYTEA NOT NULL,
                 asr_model VARCHAR(255),
                 compute_type VARCHAR(255),
-                creation_date TIMESTAMP DEFAULT NOW()
+                creation_date TIMESTAMPTZ DEFAULT NOW()
             );
             CREATE TABLE IF NOT EXISTS api_keys (
                 id SERIAL PRIMARY KEY,
                 api_key VARCHAR(255) UNIQUE NOT NULL,
                 person_name VARCHAR(255),
                 person_email VARCHAR(255),
-                creation_date TIMESTAMP DEFAULT NOW(),
-                expiration_date TIMESTAMP DEFAULT (NOW() + INTERVAL '3 months'),
+                creation_date TIMESTAMPTZ DEFAULT NOW(),
+                expiration_date TIMESTAMPTZ DEFAULT (NOW() + INTERVAL '3 months'),
                 status VARCHAR(255) DEFAULT 'active'
             );
             CREATE TABLE IF NOT EXISTS blacklist_ids (
                 teletaskid INTEGER PRIMARY KEY,
                 reason VARCHAR(255),
                 times_tried INTEGER DEFAULT 1,
-                creation_date TIMESTAMP DEFAULT NOW()
+                creation_date TIMESTAMPTZ DEFAULT NOW()
             );
 
             CREATE INDEX IF NOT EXISTS idx_vtt_files_teletaskid ON vtt_files (teletaskid);

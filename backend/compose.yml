@@ -1,12 +1,12 @@
 services:
   transcriber:
     build: ./whisper
+    environment:
+      - TZ=${TZ}
     volumes:
       - ./.env:/whisper/.env:ro
       - ./whisper/logs:/whisper/logs
       - "models:/models"
-    # ports:
-    #   - "8000:8000"
     depends_on:
       - database
     gpus: all
@@ -15,21 +15,27 @@ services:
 
   database:
     image: postgres:18-alpine
+    environment:
+      - TZ=${TZ}
+      - PGTZ=${TZ}
     env_file: ".env"
     ports:
       - "127.0.0.1:5432:5432"
     volumes:
       - "pgdata:/var/lib/postgresql"
+    command: postgres -c timezone=${TZ}
 
   api:
     build: ./api
+    environment:
+      - TZ=${TZ}
     volumes:
       - ./.env:/node/.env:ro
       - ./api/logs:/node/logs
     ports:
     - "80:80"
     depends_on:
-      - transcriber
+      - database
 
 volumes:
   models:

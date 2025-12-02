@@ -1,7 +1,7 @@
 {
   "manifest_version": 2,
   "name": "Better Tele-Task",
-  "version": "0.2",
+  "version": "0.8",
 
   "description": "Adds useful features like subtitles to HPI Tele-Task.",
 
@@ -30,5 +30,14 @@
       "matches": ["https://www.tele-task.de/lecture/video/*"],
       "js": ["browser-polyfill.min.js", "tweaks.js", "subtitles.js"]
     }
-  ]
+  ],
+
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "{btt02025-3d0e-429e-a36e-24aabb89fa46}",
+      "data_collection_permissions": {
+        "required": ["authenticationInfo"]
+      }
+    }
+  }
 }

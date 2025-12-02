@@ -12,7 +12,7 @@ def _format_line(msg: str) -> str:
     formatting logic and it's easy to change in one place.
     """
     ts = datetime.now().isoformat(sep=' ', timespec='seconds')
-    return f"[{ts}] {msg.rstrip()}\n"
+    return f"[{ts} {datetime.now().astimezone().strftime('%Z')}] {msg.rstrip()}\n"
 
 def log(message: str) -> None:
     """

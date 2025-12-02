@@ -5,6 +5,7 @@ const require = createRequire(import.meta.url)
 const db = require('./database.js')
 
 const server = fastify({
+  trustProxy: true,
   logger: {
     level: 'info',
     transport: {
@@ -14,6 +15,7 @@ const server = fastify({
         mkdir: true
       }
     },
+    timestamp: () => `,"time":"${new Date(Date.now()).toISOString()} UTC"`,
     serializers: {
       req(request) {
         return {

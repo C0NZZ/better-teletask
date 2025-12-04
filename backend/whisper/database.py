@@ -2,6 +2,7 @@ import psycopg2
 from psycopg2 import extensions
 import os
 from dotenv import load_dotenv, find_dotenv
+from datetime import datetime
 from logger import log
 
 load_dotenv(find_dotenv())
@@ -35,10 +36,20 @@ def initDatabase():
         # --- Create Table (if it doesn't exist) ---
         cur.execute(
             """
+            CREATE TABLE IF NOT EXISTS series_data (
+                series_id INTEGER PRIMARY KEY,
+                series_name VARCHAR(255),
+                lecturer_id VARCHAR(255),
+            );
+            CREATE TABLE IF NOT EXISTS lecturer_data (
+                lecturer_id INTEGER PRIMARY KEY,
+                lecturer_name VARCHAR(255)
+            );
             CREATE TABLE IF NOT EXISTS lecture_data (
                 teletaskid INTEGER PRIMARY KEY,
                 originalLang VARCHAR(50),
                 date TIMESTAMPTZ,
+                lecturer_id INTEGER,
                 lecturer VARCHAR(255),
                 semester VARCHAR(50),
                 duration INTERVAL,
@@ -85,6 +96,138 @@ def initDatabase():
         if conn:
             cur.close()
             conn.close()
+
+def series_id_exists(series_id):
+    conn = None
+    try:
+        # --- Connect to PostgreSQL ---
+        conn = psycopg2.connect(
+            dbname=DB_NAME, user=DB_USER, password=DB_PASS, host=DB_HOST, port=DB_PORT
+        )
+        cur = conn.cursor()
+
+        # --- Query all records ---
+        cur.execute(
+            "SELECT COUNT(*) FROM series_data WHERE series_id = %s;",
+            (series_id,),
+        )
+        count = cur.fetchone()[0]
+        return count > 0
+
+    except (Exception, psycopg2.Error) as error:
+        print("Error while querying PostgreSQL", error)
+        return False
+    finally:
+        if conn:
+            cur.close()
+            conn.close()
+
+def lecturer_id_exists(lecturer_id):
+    conn = None
+    try:
+        # --- Connect to PostgreSQL ---
+        conn = psycopg2.connect(
+            dbname=DB_NAME, user=DB_USER, password=DB_PASS, host=DB_HOST, port=DB_PORT
+        )
+        cur = conn.cursor()
+
+        # --- Query all records ---
+        cur.execute(
+            "SELECT COUNT(*) FROM lecturer_data WHERE lecturer_id = %s;",
+            (lecturer_id,),
+        )
+        count = cur.fetchone()[0]
+        return count > 0
+
+    except (Exception, psycopg2.Error) as error:
+        print("Error while querying PostgreSQL", error)
+        return False
+    finally:
+        if conn:
+            cur.close()
+            conn.close()
+
+def add_lecture_data(lecture_data):
+    conn = None
+    try:
+        # --- Connect to PostgreSQL ---
+        conn = psycopg2.connect(
+            dbname=DB_NAME, user=DB_USER, password=DB_PASS, host=DB_HOST, port=DB_PORT
+        )
+        cur = conn.cursor()
+
+        print(f"Adding lecture data for Teletask ID {lecture_data['teletask_id']}")
+        print(lecture_data)
+
+        teletaskid = lecture_data['teletask_id']
+        lecturer_id = lecture_data['lecturer_id']
+        lecturer_name = lecture_data['lecturer_name']
+        date = lecture_data['date']
+        date = datetime.strptime(date, "%B %d, %Y")
+        language = lecture_data['language']
+        duration = lecture_data['duration']
+        lecture_title = lecture_data['lecture_title']
+        series_id = lecture_data['series_id']
+        series_name = lecture_data['series_name']
+
+        print(date)
+        if date.month < 3 or date.month > 10:
+            semester = f"WT {date.year-1}/{date.year}"
+        else:
+            semester = f"ST {date.year}"
+
+        semester = lecture_data['semester']
+        
+        if not lecturer_id_exists(lecturer_id):
+            cur.execute(
+                "INSERT INTO lecturer_data (lecturer_id, lecturer_name) VALUES (%s, %s) ON CONFLICT (lecturer_id) DO NOTHING;",
+                (
+                    lecturer_id,
+                    lecturer_name
+                ),
+            )
+            print(f"Added lecturer data for Lecturer ID {lecturer_id}.")
+            conn.commit()
+        if not series_id_exists(series_id):
+            cur.execute(
+                "INSERT INTO series_data (series_id, series_name, lecturer_id) VALUES (%s, %s, %s) ON CONFLICT (series_id) DO NOTHING;",
+                (
+                    series_id,
+                    series_name,
+                    lecturer_id
+                ),
+            )
+            print(f"Added series data for Series ID {series_id}.")
+            conn.commit()
+
+         
+        cur.execute(
+            "INSERT INTO lecture_data (teletaskid, originalLang, date, lecturer_id, lecturer, semester, duration, title, video_mp4, desktop_mp4, podcast_mp4) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) ON CONFLICT (teletaskid) DO NOTHING;",
+            (
+                teletaskid,
+                language,
+                date,
+                lecturer_id,
+                lecturer_name,
+                semester,
+                duration,
+                lecture_title,
+                #lecture_data['video_mp4'],
+                #lecture_data['desktop_mp4'],
+                #lecture_data['podcast_mp4']
+            ),
+        )
+
+        conn.commit()
+        print(f"Successfully added lecture data for Teletask ID {lecture_data['teletaskid']}.")
+
+    except (Exception, psycopg2.Error) as error:
+        print("Error while connecting to PostgreSQL", error)
+    finally:
+        if conn:
+            cur.close()
+            conn.close()
+
 
 def add_api_key(api_key, person_name, person_email):
     conn = None

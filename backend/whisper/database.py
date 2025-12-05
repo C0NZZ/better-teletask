@@ -33,20 +33,20 @@ def initDatabase():
 
         print("connected")
         conn.set_isolation_level(extensions.ISOLATION_LEVEL_AUTOCOMMIT)
-        # --- Create Table (if it doesn't exist) ---
+        # TODO Rename: teletaskid to teletask_id, originalLang to original_lang, isOriginalLang to is_original_lang
         cur.execute(
             """
             CREATE TABLE IF NOT EXISTS series_data (
                 series_id INTEGER PRIMARY KEY,
                 series_name VARCHAR(255),
-                lecturer_id VARCHAR(255),
+                lecturer_id VARCHAR(255)
             );
             CREATE TABLE IF NOT EXISTS lecturer_data (
                 lecturer_id INTEGER PRIMARY KEY,
                 lecturer_name VARCHAR(255)
             );
             CREATE TABLE IF NOT EXISTS lecture_data (
-                teletaskid INTEGER PRIMARY KEY,
+                teletaskid INTEGER PRIMARY KEY, 
                 originalLang VARCHAR(50),
                 date TIMESTAMPTZ,
                 lecturer_id INTEGER,
@@ -165,6 +165,7 @@ def add_lecture_data(lecture_data):
         date = lecture_data['date']
         date = datetime.strptime(date, "%B %d, %Y")
         language = lecture_data['language']
+        language = "en" if language == "English" else "de"
         duration = lecture_data['duration']
         lecture_title = lecture_data['lecture_title']
         series_id = lecture_data['series_id']
@@ -176,7 +177,6 @@ def add_lecture_data(lecture_data):
         else:
             semester = f"ST {date.year}"
 
-        semester = lecture_data['semester']
         
         if not lecturer_id_exists(lecturer_id):
             cur.execute(
@@ -202,7 +202,7 @@ def add_lecture_data(lecture_data):
 
          
         cur.execute(
-            "INSERT INTO lecture_data (teletaskid, originalLang, date, lecturer_id, lecturer, semester, duration, title, video_mp4, desktop_mp4, podcast_mp4) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) ON CONFLICT (teletaskid) DO NOTHING;",
+            "INSERT INTO lecture_data (teletaskid, originalLang, date, lecturer_id, lecturer, semester, duration, title) VALUES (%s, %s, %s, %s, %s, %s, %s, %s);",
             (
                 teletaskid,
                 language,
@@ -219,9 +219,9 @@ def add_lecture_data(lecture_data):
         )
 
         conn.commit()
-        print(f"Successfully added lecture data for Teletask ID {lecture_data['teletaskid']}.")
+        print(f"Successfully added lecture data for Teletask ID {teletaskid}.")
 
-    except (Exception, psycopg2.Error) as error:
+    except (psycopg2.Error) as error:
         print("Error while connecting to PostgreSQL", error)
     finally:
         if conn:
@@ -715,13 +715,13 @@ def databaseTestScript():
 if __name__ == "__main__":
     clearDatabase()
     initDatabase()
-    save_vtt_as_blob(11408, "de", True)
+    #save_vtt_as_blob(11408, "de", True)
     #save_vtt_as_blob(11408, "en", False)
     #save_vtt_as_blob(11402, "de", True)
     #save_vtt_as_blob(11402, "en", False)
     #add_id_to_blacklist(11406, "404")
     #get_all_vtt_blobs()
-    get_all_vtt_blobs()
+    #get_all_vtt_blobs()
     # databaseTestScript()
     #getHighestTeletaskID()
     #getSmallestTeletaskID()

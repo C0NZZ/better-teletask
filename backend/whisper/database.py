@@ -398,6 +398,8 @@ def clearDatabase():
         cur.execute(
             """
             DROP TABLE IF EXISTS "vtt_files";
+            DROP TABLE IF EXISTS "lecturer_data";
+            DROP TABLE IF EXISTS "series_data";
             DROP TABLE IF EXISTS "lecture_data";
             DROP TABLE IF EXISTS "api_keys";
             DROP TABLE IF EXISTS "blacklist_ids";
@@ -741,9 +743,9 @@ def databaseTestScript():
 
 
 if __name__ == "__main__":
-    #clearDatabase()
-    #initDatabase()
-    print(get_language_of_lecture(11516))
+    clearDatabase()
+    initDatabase()
+    #print(get_language_of_lecture(11516))
     #save_vtt_as_blob(11408, "de", True)
     #save_vtt_as_blob(11408, "en", False)
     #save_vtt_as_blob(11402, "de", True)

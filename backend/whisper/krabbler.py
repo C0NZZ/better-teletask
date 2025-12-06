@@ -1,12 +1,14 @@
+import re
 import requests
 from bs4 import BeautifulSoup
 import json
 from tqdm import tqdm
 import ffmpeg
 import os
+from datetime import datetime
 from logger import log
 from dotenv import load_dotenv, find_dotenv
-from database import getHighestTeletaskID, save_vtt_as_blob
+from database import get_language_of_lecture, getHighestTeletaskID, save_vtt_as_blob, add_lecture_data
 from whisper import transcribeVideoByID
 
 load_dotenv(find_dotenv())
@@ -27,14 +29,7 @@ print("Base output folder: "+baseoutput)
 
 testid = 11413
 
-def fetchMP4(id) -> str:
-
-    cookies = {"username": USERNAME_COOKIE}
-    url = baseurl + id
-    print("requesting "+url)
-    response = requests.get(url, cookies=cookies, verify='chain.pem')
-    response.raise_for_status()
-
+def fetchMP4(id, response) -> str:
     soup = BeautifulSoup(response.text, "html.parser")
     player = soup.find(id="player")
 
@@ -200,8 +195,10 @@ def convert_to_mp3(source, out_mp3):
         print('ffmpeg error:\n', err)
         raise
 
+
+
 def transcribePipelineVideoByID(id):
-    url = fetchMP4(str(id))
+    url = fetchLecture(str(id))
     if url == "":
         print("No mp4 URL found, cannot transcribe")
         return -1
@@ -220,14 +217,14 @@ def transcribePipelineVideoByID(id):
                 return -1
 
         try:
-            language, isOriginalLanguage = transcribeVideoByID(str(id))
+            language = transcribeVideoByID(str(id))
         except Exception as e:
             print("Error transcribing video:", e)
             log(f"❌ ID: {id} ERROR: Could not transcribe video.")
             return -1
         
         try:
-            save_vtt_as_blob(id,language,isOriginalLanguage)
+            save_vtt_as_blob(id,language,True)
         except Exception as e:
             print("Error saving VTT to database:", e)
             log(f"❌ ID: {id} ERROR: Could not save VTT to database.")
@@ -236,7 +233,120 @@ def transcribePipelineVideoByID(id):
         log(f"✅ ID: {id} Transcription and saving completed successfully.")
         return 0
 
+
+def fetchLecture(id) -> str:
+    cookies = {"username": USERNAME_COOKIE}
+    url = baseurl + id
+    print("requesting "+url)
+    response = requests.get(url, cookies=cookies, verify='chain.pem')
+    response.raise_for_status()
+
+    url = fetchMP4(id, response)
+    if get_language_of_lecture(id) is None:
+        print("Fetching lecturer data for ID "+id)
+        log("Fetching lecturer data for ID "+id)
+        getLecturerData(id, response, url)
+    else:
+        print("Lecturer data already exists for ID "+id)
+        log("Lecturer data already exists for ID "+id)
+    return url
+
+# TODO crawl lecturer data of existing vtts without one
+def getLecturerData(id, response, url):
+    """
+    Input: a BeautifulSoup Tag for the <div class="box"> or a string containing that HTML.
+    Returns: dict with keys:
+      - lecturer_id (str or None)
+      - lecturer_name (str or None)
+      - date (str or None)
+      - language (str or None)
+      - duration (str or None)
+      - title (lecture name) (str or None)
+      - series_id (str or None)
+      - series_name (str or None)
+    """
+    
+    url = baseurl+id
+    cookies = {"username": USERNAME_COOKIE}
+    try:
+        print("requesting "+url)
+        response = requests.get(url, cookies=cookies, verify='chain.pem')
+        response.raise_for_status()
+
+        soup = BeautifulSoup(response.text, "html.parser")
+        lecture_info_div = soup.find("img", class_="box nopad lecture-img").parent
+        if lecture_info_div:
+            
+            lecturer_name = lecture_info_div.get_text()
+            
+            print(lecture_info_div)
+
+            print("------------")
+            lecture_name= lecture_info_div.find("h3").get_text()
+            print("Lecture Name: " + lecture_name)
+            h5 = lecture_info_div.find("h5")
+            if h5:
+                a = h5.find("a", href=True)
+                if a:
+                    series_name = a.get_text(strip=True)
+                    m = re.search(r"/series/(\d+)", a["href"])
+                    series_id = m.group(1) if m else None
+                    print("Series Name: " + series_name)
+                    print("Series ID: " + series_id)
+
+
+            lect_a = lecture_info_div.find("a", href=re.compile(r"^/lecturer/"))
+            if lect_a:
+                lecturer_name = lect_a.get_text(strip=True)
+                m = re.search(r"/lecturer/(\d+)", lect_a["href"])
+                lecturer_id = m.group(1) if m else None
+                print("Lecturer Name: " + lecturer_name)
+                print("Lecturer ID: " + lecturer_id)
+
+
+            inner = lecture_info_div.decode_contents()
+
+            def find_field(label):
+                # match 'Label: ... <br' and capture the ... part
+                m = re.search(rf"{re.escape(label)}:\s*(.*?)\s*<br", inner, re.I | re.S)
+                return m.group(1).strip() if m else None
+            
+            date = find_field("Date")
+            language = find_field("Language")
+            duration = find_field("Duration")
+
+            print("Date: " + (date))
+            print("Language: " + (language))
+            print("Duration: " + (duration))
+
+            #print(datetime.strptime(date, "%B %d, %Y"))
+
+            lecture_data = {
+                "teletask_id": id,
+                "lecturer_id": lecturer_id,
+                "lecturer_name": lecturer_name,
+                "date": date,
+                "language": language,
+                "duration": duration,
+                "lecture_title": lecture_name,
+                "series_id": series_id,
+                "series_name": series_name,
+                "url": url
+            }
+            add_lecture_data(lecture_data)
+
+            return 
+        else:
+            print("Lecturer name not found.")
+            return 
+    except requests.RequestException as e:
+        print(f"Error fetching lecturer data: {e}")
+        return 
+    
+
 if __name__ == '__main__':
     #pingVideoByID(str(2110))
     #transcribePipelineVideoByID(str(testid))
-    transcribePipelineVideoByID(str(testid))
+    #transcribePipelineVideoByID(str(11519))
+    #getLecturerData(str(11516))
+    fetchLecture(str(11519))

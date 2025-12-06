@@ -3,6 +3,7 @@ import os
 from whisperx.utils import get_writer
 from dotenv import load_dotenv, find_dotenv
 from logger import log
+from database import get_language_of_lecture
 
 load_dotenv(find_dotenv())
 MODEL = os.environ.get("ASR_MODEL")
@@ -17,7 +18,7 @@ device = "cuda"
 
 model = whisperx.load_model(MODEL, device=device, compute_type=compute_type)
 
-def transcribeVideoByID(id): 
+def transcribeVideoByID(id) -> str: 
     file_path = os.path.join(input_path, id + ".mp3")
     try:
         # fail early if input audio doesn't exist
@@ -25,12 +26,20 @@ def transcribeVideoByID(id):
             msg = f"❌ ID: {id} ERROR: input audio file not found: {file_path}"
             log(msg)
             print(msg)
-            return language, True, -1
+            return ""
+        
+
+        language = None
+        try:
+            language = get_language_of_lecture(int(id))
+            print(f"Fetched language from database: {language}")
+        except Exception as e:
+            print(f"Could not fetch language from database, defaulting to whisperx auto-detection. Error: {e}")
 
         audio = whisperx.load_audio(file_path)
 
-        result = model.transcribe(audio)
-        # print(result["segments"])
+        result = model.transcribe(audio, batch_size=4, language=language)
+        print(result["segments"])
 
         # Save the language before alignment
         language = result.get("language")
@@ -62,7 +71,7 @@ def transcribeVideoByID(id):
             {"max_line_width": None, "max_line_count": None, "highlight_words": False},
         )
 
-        return language, True
+        return language
     except Exception as e:
         # log and return -1 to signal failure
         log(f"❌ ID: {id} ERROR: {e}")
@@ -71,6 +80,5 @@ def transcribeVideoByID(id):
 
 
 if __name__ == '__main__':
-    # Lazy import subprocess to avoid top-level dependency errors if unused
-    id="11410"
+    id="11517"
     transcribeVideoByID(id)

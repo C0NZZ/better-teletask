@@ -170,6 +170,7 @@ def add_lecture_data(lecture_data):
         lecture_title = lecture_data['lecture_title']
         series_id = lecture_data['series_id']
         series_name = lecture_data['series_name']
+        url = lecture_data['url']
 
         print(date)
         if date.month < 3 or date.month > 10:
@@ -202,7 +203,7 @@ def add_lecture_data(lecture_data):
 
          
         cur.execute(
-            "INSERT INTO lecture_data (teletaskid, originalLang, date, lecturer_id, lecturer, semester, duration, title) VALUES (%s, %s, %s, %s, %s, %s, %s, %s);",
+            "INSERT INTO lecture_data (teletaskid, originalLang, date, lecturer_id, lecturer, semester, duration, title, video_mp4) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s);",
             (
                 teletaskid,
                 language,
@@ -212,9 +213,7 @@ def add_lecture_data(lecture_data):
                 semester,
                 duration,
                 lecture_title,
-                #lecture_data['video_mp4'],
-                #lecture_data['desktop_mp4'],
-                #lecture_data['podcast_mp4']
+                url
             ),
         )
 
@@ -228,6 +227,35 @@ def add_lecture_data(lecture_data):
             cur.close()
             conn.close()
 
+def get_language_of_lecture(teletaskid) -> str:
+    conn = None
+    try:
+        # --- Connect to PostgreSQL ---
+        conn = psycopg2.connect(
+            dbname=DB_NAME, user=DB_USER, password=DB_PASS, host=DB_HOST, port=DB_PORT
+        )
+        cur = conn.cursor()
+
+        # --- Query record ---
+        cur.execute(
+            "SELECT originalLang FROM lecture_data WHERE teletaskid = %s;",
+            (teletaskid,),
+        )
+        row = cur.fetchone()
+
+        if row:
+            return row[0]
+        else:
+            print(f"No lecture data found for Teletask ID: {teletaskid}")
+            return None
+
+    except (Exception, psycopg2.Error) as error:
+        print("Error while querying PostgreSQL", error)
+        return None
+    finally:
+        if conn:
+            cur.close()
+            conn.close()
 
 def add_api_key(api_key, person_name, person_email):
     conn = None
@@ -713,8 +741,9 @@ def databaseTestScript():
 
 
 if __name__ == "__main__":
-    clearDatabase()
-    initDatabase()
+    #clearDatabase()
+    #initDatabase()
+    print(get_language_of_lecture(11516))
     #save_vtt_as_blob(11408, "de", True)
     #save_vtt_as_blob(11408, "en", False)
     #save_vtt_as_blob(11402, "de", True)

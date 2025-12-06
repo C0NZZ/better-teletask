@@ -8,7 +8,7 @@ import os
 from datetime import datetime
 from logger import log
 from dotenv import load_dotenv, find_dotenv
-from database import getHighestTeletaskID, save_vtt_as_blob, add_lecture_data
+from database import get_language_of_lecture, getHighestTeletaskID, save_vtt_as_blob, add_lecture_data
 from whisper import transcribeVideoByID
 
 load_dotenv(find_dotenv())
@@ -29,14 +29,7 @@ print("Base output folder: "+baseoutput)
 
 testid = 11413
 
-def fetchMP4(id) -> str:
-
-    cookies = {"username": USERNAME_COOKIE}
-    url = baseurl + id
-    print("requesting "+url)
-    response = requests.get(url, cookies=cookies, verify='chain.pem')
-    response.raise_for_status()
-
+def fetchMP4(id, response) -> str:
     soup = BeautifulSoup(response.text, "html.parser")
     player = soup.find(id="player")
 
@@ -202,8 +195,10 @@ def convert_to_mp3(source, out_mp3):
         print('ffmpeg error:\n', err)
         raise
 
+
+
 def transcribePipelineVideoByID(id):
-    url = fetchMP4(str(id))
+    url = fetchLecture(str(id))
     if url == "":
         print("No mp4 URL found, cannot transcribe")
         return -1
@@ -222,14 +217,14 @@ def transcribePipelineVideoByID(id):
                 return -1
 
         try:
-            language, isOriginalLanguage = transcribeVideoByID(str(id))
+            language = transcribeVideoByID(str(id))
         except Exception as e:
             print("Error transcribing video:", e)
             log(f"❌ ID: {id} ERROR: Could not transcribe video.")
             return -1
         
         try:
-            save_vtt_as_blob(id,language,isOriginalLanguage)
+            save_vtt_as_blob(id,language,True)
         except Exception as e:
             print("Error saving VTT to database:", e)
             log(f"❌ ID: {id} ERROR: Could not save VTT to database.")
@@ -238,7 +233,26 @@ def transcribePipelineVideoByID(id):
         log(f"✅ ID: {id} Transcription and saving completed successfully.")
         return 0
 
-def getLecturerData(id):
+
+def fetchLecture(id) -> str:
+    cookies = {"username": USERNAME_COOKIE}
+    url = baseurl + id
+    print("requesting "+url)
+    response = requests.get(url, cookies=cookies, verify='chain.pem')
+    response.raise_for_status()
+
+    url = fetchMP4(id, response)
+    if get_language_of_lecture(id) is None:
+        print("Fetching lecturer data for ID "+id)
+        log("Fetching lecturer data for ID "+id)
+        getLecturerData(id, response, url)
+    else:
+        print("Lecturer data already exists for ID "+id)
+        log("Lecturer data already exists for ID "+id)
+    return url
+
+# TODO crawl lecturer data of existing vtts without one
+def getLecturerData(id, response, url):
     """
     Input: a BeautifulSoup Tag for the <div class="box"> or a string containing that HTML.
     Returns: dict with keys:
@@ -316,21 +330,23 @@ def getLecturerData(id):
                 "duration": duration,
                 "lecture_title": lecture_name,
                 "series_id": series_id,
-                "series_name": series_name
+                "series_name": series_name,
+                "url": url
             }
             add_lecture_data(lecture_data)
 
             return 
         else:
             print("Lecturer name not found.")
-            return ""
+            return 
     except requests.RequestException as e:
         print(f"Error fetching lecturer data: {e}")
-        return ""
+        return 
     
 
 if __name__ == '__main__':
     #pingVideoByID(str(2110))
     #transcribePipelineVideoByID(str(testid))
-    #transcribePipelineVideoByID(str(11516))
-    getLecturerData(str(11516))
+    #transcribePipelineVideoByID(str(11519))
+    #getLecturerData(str(11516))
+    fetchLecture(str(11519))

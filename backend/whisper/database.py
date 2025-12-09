@@ -97,6 +97,54 @@ def initDatabase():
             cur.close()
             conn.close()
 
+def get_all_lecture_ids():
+    conn = None
+    try:
+        # --- Connect to PostgreSQL ---
+        conn = psycopg2.connect(
+            dbname=DB_NAME, user=DB_USER, password=DB_PASS, host=DB_HOST, port=DB_PORT
+        )
+        cur = conn.cursor()
+
+        # --- Query all records ---
+        cur.execute("SELECT teletaskid FROM lecture_data;")
+        rows = cur.fetchall()
+        ids = [row[0] for row in rows]  # extract the first element from each tuple
+        print(ids)
+        return ids
+
+    except (Exception, psycopg2.Error) as error:
+        print("Error while querying PostgreSQL", error)
+        return []
+    finally:
+        if conn:
+            cur.close()
+            conn.close()
+
+def get_all_original_vtt_ids():
+    conn = None
+    try:
+        # --- Connect to PostgreSQL ---
+        conn = psycopg2.connect(
+            dbname=DB_NAME, user=DB_USER, password=DB_PASS, host=DB_HOST, port=DB_PORT
+        )
+        cur = conn.cursor()
+
+        # --- Query all records ---
+        cur.execute("SELECT teletaskid FROM vtt_files WHERE isOriginalLang = TRUE;")
+        rows = cur.fetchall()
+        ids = [row[0] for row in rows]  # extract the first element from each tuple
+        print(ids)
+        return ids
+
+    except (Exception, psycopg2.Error) as error:
+        print("Error while querying PostgreSQL", error)
+        return []
+    finally:
+        if conn:
+            cur.close()
+            conn.close()
+
 def series_id_exists(series_id):
     conn = None
     try:
@@ -283,6 +331,43 @@ def add_api_key(api_key, person_name, person_email):
             cur.close()
             conn.close()
 
+
+def get_api_key_by_key(api_key):
+    conn = None
+    try:
+        # --- Connect to PostgreSQL ---
+        conn = psycopg2.connect(
+            dbname=DB_NAME, user=DB_USER, password=DB_PASS, host=DB_HOST, port=DB_PORT
+        )
+        cur = conn.cursor()
+
+        # --- Query record ---
+        cur.execute(
+            "SELECT api_key, person_name, person_email, creation_date, expiration_date, status FROM api_keys WHERE api_key = %s;",
+            (api_key,),
+        )
+        row = cur.fetchone()
+
+        if row:
+            return {
+                "api_key": row[0],
+                "person_name": row[1],
+                "person_email": row[2],
+                "creation_date": row[3],
+                "expiration_date": row[4],
+                "status": row[5]
+            }
+        else:
+            print(f"No API key found: {api_key}")
+            return None
+
+    except (Exception, psycopg2.Error) as error:
+        print("Error while querying PostgreSQL", error)
+        return None
+    finally:
+        if conn:
+            cur.close()
+            conn.close()
 
 def get_api_key_by_name(person_name):
     conn = None
@@ -746,9 +831,10 @@ if __name__ == "__main__":
     clearDatabase()
     initDatabase()
     #print(get_language_of_lecture(11516))
-    #save_vtt_as_blob(11408, "de", True)
-    #save_vtt_as_blob(11408, "en", False)
-    #save_vtt_as_blob(11402, "de", True)
+    save_vtt_as_blob(11408, "de", True)
+    save_vtt_as_blob(11406, "de", True)
+    save_vtt_as_blob(11405, "de", True)
+    save_vtt_as_blob(11402, "de", True)
     #save_vtt_as_blob(11402, "en", False)
     #add_id_to_blacklist(11406, "404")
     #get_all_vtt_blobs()

@@ -1,5 +1,6 @@
 import re
 import requests
+from requests.models import Response, HTTPError
 from bs4 import BeautifulSoup
 import json
 from tqdm import tqdm
@@ -9,7 +10,6 @@ from datetime import datetime
 from logger import log
 from dotenv import load_dotenv, find_dotenv
 from database import get_language_of_lecture, getHighestTeletaskID, save_vtt_as_blob, add_lecture_data
-from whisper import transcribeVideoByID
 
 load_dotenv(find_dotenv())
 
@@ -27,7 +27,14 @@ baseurl = "https://www.tele-task.de/lecture/video/"
 print("Base input folder: "+baseinput)
 print("Base output folder: "+baseoutput)
 
-testid = 11413
+
+def fetchBody(id) -> Response:
+    cookies = {"username": USERNAME_COOKIE}
+    url = baseurl + id
+    print("requesting "+url)
+    response = requests.get(url, cookies=cookies, verify='chain.pem')
+    response.raise_for_status()
+    return response
 
 def fetchMP4(id, response) -> str:
     soup = BeautifulSoup(response.text, "html.parser")
@@ -198,6 +205,9 @@ def convert_to_mp3(source, out_mp3):
 
 
 def transcribePipelineVideoByID(id):
+    # lazyload whisper here to avoid the annoying waiting time
+    from whisper import transcribeVideoByID
+
     url = fetchLecture(str(id))
     if url == "":
         print("No mp4 URL found, cannot transcribe")
@@ -235,11 +245,11 @@ def transcribePipelineVideoByID(id):
 
 
 def fetchLecture(id) -> str:
-    cookies = {"username": USERNAME_COOKIE}
-    url = baseurl + id
-    print("requesting "+url)
-    response = requests.get(url, cookies=cookies, verify='chain.pem')
-    response.raise_for_status()
+    try: 
+        response = fetchBody(id)
+    except HTTPError as e:
+        print("Error fetching body:", e)
+        return ""
 
     url = fetchMP4(id, response)
     if get_language_of_lecture(id) is None:

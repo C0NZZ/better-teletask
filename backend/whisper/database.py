@@ -3,7 +3,12 @@ from psycopg2 import extensions
 import os
 from dotenv import load_dotenv, find_dotenv
 from datetime import datetime
-from logger import log
+
+
+# setup logging
+import logger
+import logging
+logger = logging.getLogger("btt_root_logger")
 
 load_dotenv(find_dotenv())
 
@@ -530,22 +535,11 @@ def save_vtt_as_blob(teletaskid, language, isOriginalLang):
     file_path = os.path.join(input_path, str(teletaskid) + ".vtt")
     file_path_txt = os.path.join(input_path, str(teletaskid) + ".txt")
     if not os.path.exists(file_path):
-        log(
-            f"❌ ID: {teletaskid} ERROR: VTT file not found, cant put in database: {file_path}"
-        )
-        print(
-            f"❌ ID: {teletaskid} ERROR: VTT file not found, cant put in database: {file_path}"
-        )
+        logger.error(f"VTT file not found, cant put in database: {file_path}", extra={'id': teletaskid})
         return -1
     if not os.path.exists(file_path_txt):
-        log(
-            f"❌ ID: {teletaskid} ERROR: TXT file not found, cant put in database: {file_path_txt}"
-        )
-        print(
-            f"❌ ID: {teletaskid} ERROR: TXT file not found, cant put in database: {file_path_txt}"
-        )
+        logger.error(f"TXT file not found, cant put in database: {file_path_txt}", extra={'id': teletaskid})
         return -1
-    print(file_path)
     try:
         # --- Connect to PostgreSQL ---
         conn = psycopg2.connect(

@@ -6,26 +6,29 @@ import json
 from tqdm import tqdm
 import ffmpeg
 import os
-from datetime import datetime
-from logger import log
 from dotenv import load_dotenv, find_dotenv
 from database import get_language_of_lecture, getHighestTeletaskID, save_vtt_as_blob, add_lecture_data
+
+# setup logging
+import logger
+import logging
+logger = logging.getLogger("btt_root_logger")
 
 load_dotenv(find_dotenv())
 
 OUTPUTFOLDER = os.environ.get("VTT_DEST_FOLDER")
 INPUTFOLDER = os.environ.get("RECORDING_SOURCE_FOLDER")
 USERNAME_COOKIE = os.environ.get("USERNAME_COOKIE")
-# print(OUTPUTFOLDER)
-# print(INPUTFOLDER)
-# print(USERNAME_COOKIE)
-
 script_dir = os.path.dirname(os.path.abspath(__file__))
 baseinput =  os.path.join(script_dir, INPUTFOLDER)
 baseoutput =  os.path.join(script_dir, OUTPUTFOLDER)
 baseurl = "https://www.tele-task.de/lecture/video/"
-print("Base input folder: "+baseinput)
-print("Base output folder: "+baseoutput)
+
+logger.debug("output folder: "+OUTPUTFOLDER)
+logger.debug("input folder: "+INPUTFOLDER)
+logger.debug("username cookie: "+USERNAME_COOKIE)
+logger.debug("base input folder: "+baseinput)
+logger.debug("base output folder: "+baseoutput)
 
 
 def fetchBody(id) -> Response:
@@ -42,9 +45,7 @@ def fetchMP4(id, response) -> str:
 
     if player and player.has_attr("configuration"):
         config_json = player["configuration"]
-        #print(config_json)
-
-        print("Trying to fetch podcast.mp4 from fallbackStreams")
+        logger.debug("Trying to fetch podcast.mp4 from fallbackStreams for ID ", extra={'id': id})
         try:
             # TODO ADD LOGGING
             config = json.loads(config_json)
@@ -198,7 +199,7 @@ def convert_to_mp3(source, out_mp3):
         print(f'Saved MP3 to {out_mp3}')
     except ffmpeg.Error as e:
         err = e.stderr.decode() if getattr(e, 'stderr', None) else str(e)
-        log(f"❌ ERROR converting to MP3: {err}")
+        logger.error(f"Failed converting to MP3: {err}")
         print('ffmpeg error:\n', err)
         raise
 
@@ -223,24 +224,22 @@ def transcribePipelineVideoByID(id):
                 convert_to_mp3(baseinput+str(id)+".mp4", baseinput+str(id)+".mp3")
             except Exception as e2:
                 print("Error downloading and converting locally:", e2)
-                log(f"❌ ID: {id} ERROR: Could not convert video to mp3.")
+                logger.error(f"Could not convert video to mp3.", extra={'id': id})
                 return -1
 
         try:
             language = transcribeVideoByID(str(id))
-        except Exception as e:
-            print("Error transcribing video:", e)
-            log(f"❌ ID: {id} ERROR: Could not transcribe video.")
+        except FileNotFoundError as e:
+            logger.error(f"ERROR: Could not transcribe video {e}.", extra={'id': id})
             return -1
         
         try:
             save_vtt_as_blob(id,language,True)
         except Exception as e:
-            print("Error saving VTT to database:", e)
-            log(f"❌ ID: {id} ERROR: Could not save VTT to database.")
+            logger.error(f"Could not save VTT to database {e}.", extra={'id': id})
             return -1
-        
-        log(f"✅ ID: {id} Transcription and saving completed successfully.")
+
+        logger.info(f"ID: {id} Transcription and saving completed successfully.")
         return 0
 
 
@@ -254,11 +253,11 @@ def fetchLecture(id) -> str:
     url = fetchMP4(id, response)
     if get_language_of_lecture(id) is None:
         print("Fetching lecturer data for ID "+id)
-        log("Fetching lecturer data for ID "+id)
+        logging.debug("Fetching lecturer data for ID "+id)
         getLecturerData(id, response, url)
     else:
         print("Lecturer data already exists for ID "+id)
-        log("Lecturer data already exists for ID "+id)
+        logging.debug("Lecturer data already exists for ID "+id)
     return url
 
 # TODO crawl lecturer data of existing vtts without one
@@ -329,7 +328,6 @@ def getLecturerData(id, response, url):
             print("Language: " + (language))
             print("Duration: " + (duration))
 
-            #print(datetime.strptime(date, "%B %d, %Y"))
 
             lecture_data = {
                 "teletask_id": id,
@@ -359,4 +357,4 @@ if __name__ == '__main__':
     #transcribePipelineVideoByID(str(testid))
     #transcribePipelineVideoByID(str(11519))
     #getLecturerData(str(11516))
-    fetchLecture(str(11519))
+    logger.info("Kratzer module loaded.", extra={'id': 123})

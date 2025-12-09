@@ -11,7 +11,7 @@ from database import (
     original_language_exists,
     initDatabase
 )
-from krabbler import get_upper_ids, pingVideoByID, transcribePipelineVideoByID
+from kratzer import get_upper_ids, pingVideoByID, transcribePipelineVideoByID
 
 class AsyncQueue:
     def __init__(self):

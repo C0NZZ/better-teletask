@@ -2,7 +2,7 @@ from database import (
     add_api_key, remove_api_key, get_all_api_keys, get_api_key_by_name, get_api_key_by_key,
     getHighestTeletaskID ,get_all_lecture_ids, get_all_original_vtt_ids
 )
-from krabbler import getLecturerData, fetchBody, baseurl, pingVideoByID 
+from kratzer import getLecturerData, fetchBody, baseurl, pingVideoByID 
 import hashlib
 import argparse
 import os

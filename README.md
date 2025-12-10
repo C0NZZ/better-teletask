@@ -17,6 +17,10 @@ BTT also adds some quality-of-life features to the Tele-Task player to make it m
 - You can resize both of the videos (camera and screen recording) to 100% width, effectively allowing a fullscreen view of one of the videos
 - Pressing "k" on your keyboard pauses/plays the video, like on YouTube
 
+## Installation
+
+Currently, BTT only works in Firefox. To install the browser extension, head to the [Releases](https://github.com/C0NZZ/better-teletask/releases) page and follow the instructions there.
+
 ## FAQ
 
 If you have any more questions, please consult our [FAQ](https://github.com/C0NZZ/better-teletask/wiki/FAQ) or contact us directly.

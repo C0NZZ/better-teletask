@@ -243,9 +243,9 @@ async def update_upper_ids_periodically():
     while True:
         print("Updating upper IDs...")
         upper_ids = get_upper_ids()
-        async with forward_queue._lock:
+        async with multi_lock([forward_queue, in_process_queue]):
             for uid in upper_ids:
-                if not await forward_queue.contains_unlocked(uid):
+                if not await forward_queue.contains_unlocked(uid) and not await in_process_queue.contains_unlocked(uid):
                     print(f"Adding new upper ID to forward queue: {uid}")
                     await forward_queue.add_unlocked(uid)
         print(f"Upper IDs update complete. Sleeping for {sleep_time // 60} minutes.")

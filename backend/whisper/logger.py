@@ -13,7 +13,6 @@ print(f"Logger level set to: {logging.getLevelName(LEVEL_NAME)}, if you see too 
 LOG_FILE_PATH = "logs/whisper.log"
 os.makedirs(os.path.dirname(LOG_FILE_PATH), exist_ok=True)
 
-
 # Implement own Self Formatter for id field
 class SafeFormatter(logging.Formatter):
 
@@ -22,7 +21,7 @@ class SafeFormatter(logging.Formatter):
         if not hasattr(record, 'id'):
             record.id = "GLOBAL" 
         else:
-            record.id = "ID: "+str(record.id)      
+            record.id = str(record.id)      
         return super().format(record)
 
 String_Format = '[%(asctime)s %(levelname)s] [%(id)s] %(message)s'

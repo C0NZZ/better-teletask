@@ -34,7 +34,7 @@ logger.debug("base output folder: "+baseoutput)
 def fetchBody(id) -> Response:
     cookies = {"username": USERNAME_COOKIE}
     url = baseurl + id
-    print("requesting "+url)
+    logger.info("requesting "+url, extra={'id': id})
     response = requests.get(url, cookies=cookies, verify='chain.pem')
     response.raise_for_status()
     return response
@@ -47,90 +47,84 @@ def fetchMP4(id, response) -> str:
         config_json = player["configuration"]
         logger.debug("Trying to fetch podcast.mp4 from fallbackStreams for ID ", extra={'id': id})
         try:
-            # TODO ADD LOGGING
+
             config = json.loads(config_json)
             fallbackStreams = config.get("fallbackStream")
-            if fallbackStreams is not None:
-                #print (fallbackStreams)
-               
+            if fallbackStreams is not None:               
                 for key, url in fallbackStreams.items():
                         if url and url.endswith('podcast.mp4'):
-                            print(f"Found first podcast.mp4 from FallbackStream URL: {url}")
+                            logger.info(f"Found first podcast.mp4 from FallbackStream URL: {url}", extra={'id': id})
                             return url
             
                 for key, url in fallbackStreams.items():
                         if url and url.endswith('.mp4'):
-                            print(f"Found .mp4 URL from FallbackStream: {url}")
+                            logger.info(f"Found .mp4 URL from FallbackStream: {url}", extra={'id': id})
                             return url
                 
                     
             else:
-                print("'fallbackStreams' key not found in configuration.")
+                logger.info("'fallbackStreams' key not found in configuration.", extra={'id': id})
         except json.JSONDecodeError:
-            print("Configuration attribute is not valid JSON:")
-            print(config_json)
+            logger.error("Configuration attribute is not valid JSON:", extra={'id': id})
+            logger.error(config_json, extra={'id': id})
 
-        print("did not find podcast.mp4 in fallbackStreams")
-        print("Trying to fetch .mp4 from streams")
+        logger.info("did not find podcast.mp4 in fallbackStreams, trying to fetch .mp4 from streams", extra={'id': id})
+
         try:
-            # TODO ADD LOGGING
             config = json.loads(config_json)
             streams = config.get("streams")
             if streams is not None:
-                #print (streams)
                 for stream in streams:
                     for key, url in stream.items():
                         if url and url.endswith('podcast.mp4'):
-                            print(f"Found first .mp4 URL: {url}")
+                            logger.info(f"Found podcast.mp4 URL in streams: {url}", extra={'id': id})
                             return url
                 sd_urls = [stream.get("sd") for stream in streams if "sd" in stream]
-                print("SD URLs:")
+            
                 for url in sd_urls:
                     if url.endswith("video.mp4") or url.endswith("CameraMicrophone.mp4"):
-                        print(url)
+                        logger.info(f"Found video.mp4 URL in sd streams: {url}", extra={'id': id})
                         return url
                 for url in sd_urls:
                     if url.endswith(".mp4"):
-                        print(url)
+                        logger.info(f"Found first .mp4 URL in sd streams: {url}", extra={'id': id})
                         return url
                 for stream in streams:
                     for key, url in stream.items():
                         if url and url.endswith('.mp4'):
-                            print(f"Found first .mp4 URL: {url}")
+                            logger.info(f"Found first .mp4 URL in streams: {url}", extra={'id': id})
                             return url
                     
             else:
-                print("'streams' key not found in configuration.")
+                logger.warning("'streams' key not found in configuration.", extra={'id': id})
         except json.JSONDecodeError:
-            print("Configuration attribute is not valid JSON:")
-            print(config_json)
+            logger.error(f"Configuration attribute is not valid JSON: {config_json}", extra={'id': id})
     else:
-        print("Element with id 'player' and attribute 'configuration' not found.")
+        logger.error("Element with id 'player' and attribute 'configuration' not found, cant find mp4 URL", extra={'id': id})
 
-    print("No mp4 URL found")
+    logger.error("No mp4 URL found", extra={'id': id})
     return ""
 
 def pingVideoByID(id) -> str:
-    url = baseurl+id
-    cookies = {"username": USERNAME_COOKIE}
-    try:
-        print("requesting "+url)
-        response = requests.get(url, cookies=cookies, verify='chain.pem')
-        if(response.status_code == 200):
-            print("200, Video exists")
-            return "200"
-        elif(response.status_code == 404): # literally does not exist
-            print("404, not available yet")
-            return "404"
-        elif(response.status_code == 401):
-            print("401, not allowed, please use a session cookie")
-            return "401"
-        elif(response.status_code == 403): # these can happen randomly
-            print("403, access forbidden")
-            return "403"
-    except requests.ConnectionError as e:
-        print(f"Error fetching video: {e}")
+    try: 
+        response = fetchBody(id)
+    except HTTPError as e:
+        logger.error("Error fetching body:", extra={'id': id})
         return ""
+
+    if(response.status_code == 200):
+        logging.info("Code 200, Video exists", extra={'id': id})
+        return "200"
+    elif(response.status_code == 404): # literally does not exist
+        logging.info("Code 404, not available yet", extra={'id': id})
+        return "404"
+    elif(response.status_code == 401):
+        logging.info("Code 401, not allowed, please use a session cookie", extra={'id': id})
+        return "401"
+    elif(response.status_code == 403): # these can happen randomly
+        logging.info("Code 403, access forbidden", extra={'id': id})
+        return "403"
+
 
 def get_upper_ids():
     ids = []
@@ -143,21 +137,15 @@ def get_upper_ids():
         res = pingVideoByID(str(highest + i))
         if res == "200":
             ids.append(highest+i)
-            if unreachable_ids:
-                print("Unreachable IDs found:")
-                for uid in unreachable_ids:
-                    print(f" - {uid}")
-                    # TODO log 
         if res == "401":
+            logger.error("Received 401 Unauthorized. Check your USERNAME_COOKIE environment variable.", extra={'id': highest + i})
             #need to handle that case, because then we have no cookie
-            print()
         if res == "403" or res =="404":
-            #need special logging if a id is 403 or 404 but after that its 200
+            logger.warning(f"Received {res} for ID {highest + i}.", extra={'id': highest + i})
             unreachable_ids.append(res)
     return ids
     
 def downloadMP4(url, id):
-    print(f"Downloading: {url}")
     try:
         mp4_response = requests.get(url, stream=True, verify='chain.pem')
         mp4_response.raise_for_status()
@@ -172,9 +160,9 @@ def downloadMP4(url, id):
             for chunk in mp4_response.iter_content(chunk_size=8192):
                 f.write(chunk)
                 bar.update(len(chunk))
-        print("Download complete:"+baseinput+str(id)+".mp4")
+        logging.info("Download complete:"+baseinput+str(id)+".mp4", extra={'id': id})
     except Exception as e:
-        print("Error downloading MP4:", e)
+        logging.error(f"Error downloading mp4: {e}", extra={'id': id})
         raise
 
 def convert_to_mp3(source, out_mp3):
@@ -196,11 +184,10 @@ def convert_to_mp3(source, out_mp3):
             .global_args('-hide_banner', '-loglevel', 'error')
             .run(capture_stdout=True, capture_stderr=True)
         )
-        print(f'Saved MP3 to {out_mp3}')
+        logger.info(f'Saved MP3 to {out_mp3}')
     except ffmpeg.Error as e:
         err = e.stderr.decode() if getattr(e, 'stderr', None) else str(e)
         logger.error(f"Failed converting to MP3: {err}")
-        print('ffmpeg error:\n', err)
         raise
 
 
@@ -211,20 +198,19 @@ def transcribePipelineVideoByID(id):
 
     url = fetchLecture(str(id))
     if url == "":
-        print("No mp4 URL found, cannot transcribe")
+        logging.error("No mp4 URL found, cannot transcribe", extra={'id': id})
         return -1
     else:
         try:
+            logging.info(f"Trying to directly convert to mp3 from URL: {url}", extra={'id': id})
             convert_to_mp3(url, baseinput+str(id)+".mp3")
         except Exception as e:
-            print("Error converting to mp3:", e)
-            print("Trying to download mp4 and convert locally")
+            logging.info("Trying to download mp4 and convert locally", extra={'id': id})
             try:
                 downloadMP4(url, id)
                 convert_to_mp3(baseinput+str(id)+".mp4", baseinput+str(id)+".mp3")
             except Exception as e2:
-                print("Error downloading and converting locally:", e2)
-                logger.error(f"Could not convert video to mp3.", extra={'id': id})
+                logger.error(f"Could not convert video to mp3, aborting transcribtion for this lecture.", extra={'id': id})
                 return -1
 
         try:
@@ -247,17 +233,15 @@ def fetchLecture(id) -> str:
     try: 
         response = fetchBody(id)
     except HTTPError as e:
-        print("Error fetching body:", e)
+        logger.error("Error fetching body:", extra={'id': id})
         return ""
 
     url = fetchMP4(id, response)
     if get_language_of_lecture(id) is None:
-        print("Fetching lecturer data for ID "+id)
-        logging.debug("Fetching lecturer data for ID "+id)
+        logger.debug("No entry found for this lectures language in the databse, fetching lecture data ", extra={'id': id})
         getLecturerData(id, response, url)
     else:
-        print("Lecturer data already exists for ID "+id)
-        logging.debug("Lecturer data already exists for ID "+id)
+        logger.debug("Lecturer data already exists for ID ", extra={'id': id})
     return url
 
 # TODO crawl lecturer data of existing vtts without one
@@ -275,86 +259,72 @@ def getLecturerData(id, response, url):
       - series_name (str or None)
     """
     
-    url = baseurl+id
-    cookies = {"username": USERNAME_COOKIE}
-    try:
-        print("requesting "+url)
-        response = requests.get(url, cookies=cookies, verify='chain.pem')
-        response.raise_for_status()
+    try: 
+        response = fetchBody(id)
+    except HTTPError as e:
+        logger.error("Error fetching body:", extra={'id': id})
+        return ""
 
-        soup = BeautifulSoup(response.text, "html.parser")
-        lecture_info_div = soup.find("img", class_="box nopad lecture-img").parent
-        if lecture_info_div:
-            
-            lecturer_name = lecture_info_div.get_text()
-            
-            # print(lecture_info_div)
+    soup = BeautifulSoup(response.text, "html.parser")
+    lecture_info_div = soup.find("img", class_="box nopad lecture-img").parent
 
-            # print("------------")
-            lecture_name= lecture_info_div.find("h3").get_text()
-            print("Lecture Name: " + lecture_name)
-            h5 = lecture_info_div.find("h5")
-            if h5:
-                a = h5.find("a", href=True)
-                if a:
-                    series_name = a.get_text(strip=True)
-                    m = re.search(r"/series/(\d+)", a["href"])
-                    series_id = m.group(1) if m else None
-                    print("Series Name: " + series_name)
-                    print("Series ID: " + series_id)
+    if lecture_info_div:
+        
+        lecturer_name = lecture_info_div.get_text()
+        lecture_name= lecture_info_div.find("h3").get_text()
+        h5 = lecture_info_div.find("h5")
+        if h5:
+            a = h5.find("a", href=True)
+            if a:
+                series_name = a.get_text(strip=True)
+                m = re.search(r"/series/(\d+)", a["href"])
+                series_id = m.group(1) if m else None
 
+        lect_a = lecture_info_div.find("a", href=re.compile(r"^/lecturer/"))
+        if lect_a:
+            lecturer_name = lect_a.get_text(strip=True)
+            m = re.search(r"/lecturer/(\d+)", lect_a["href"])
+            lecturer_id = m.group(1) if m else None
 
-            lect_a = lecture_info_div.find("a", href=re.compile(r"^/lecturer/"))
-            if lect_a:
-                lecturer_name = lect_a.get_text(strip=True)
-                m = re.search(r"/lecturer/(\d+)", lect_a["href"])
-                lecturer_id = m.group(1) if m else None
-                print("Lecturer Name: " + lecturer_name)
-                print("Lecturer ID: " + lecturer_id)
+        inner = lecture_info_div.decode_contents()
 
+        def find_field(label):
+            # match 'Label: ... <br' and capture the ... part
+            m = re.search(rf"{re.escape(label)}:\s*(.*?)\s*<br", inner, re.I | re.S)
+            return m.group(1).strip() if m else None
+        
+        date = find_field("Date")
+        language = find_field("Language")
+        duration = find_field("Duration")
 
-            inner = lecture_info_div.decode_contents()
+        lecture_data = {
+            "teletask_id": id,
+            "lecturer_id": lecturer_id,
+            "lecturer_name": lecturer_name,
+            "date": date,
+            "language": language,
+            "duration": duration,
+            "lecture_title": lecture_name,
+            "series_id": series_id,
+            "series_name": series_name,
+            "url": url
+        }
+        logger.debug(f"Fetched lecture data: {lecture_data}", extra={'id': id})
+        add_lecture_data(lecture_data)
 
-            def find_field(label):
-                # match 'Label: ... <br' and capture the ... part
-                m = re.search(rf"{re.escape(label)}:\s*(.*?)\s*<br", inner, re.I | re.S)
-                return m.group(1).strip() if m else None
-            
-            date = find_field("Date")
-            language = find_field("Language")
-            duration = find_field("Duration")
-
-            print("Date: " + (date))
-            print("Language: " + (language))
-            print("Duration: " + (duration))
-
-
-            lecture_data = {
-                "teletask_id": id,
-                "lecturer_id": lecturer_id,
-                "lecturer_name": lecturer_name,
-                "date": date,
-                "language": language,
-                "duration": duration,
-                "lecture_title": lecture_name,
-                "series_id": series_id,
-                "series_name": series_name,
-                "url": url
-            }
-            add_lecture_data(lecture_data)
-
-            return 
-        else:
-            print("Lecturer name not found.")
-            return 
-    except requests.RequestException as e:
-        print(f"Error fetching lecturer data: {e}")
+        return 
+    else:
+        logger.error("Div not found to scrape lecture data.", extra={'id': id})
         return 
     
 
 if __name__ == '__main__':
-    #pingVideoByID(str(2110))
+    pingVideoByID(str(2110))
+    pingVideoByID(str(2111))
+    pingVideoByID(str(2112))
+
+    url = transcribePipelineVideoByID(str(2112))
     #transcribePipelineVideoByID(str(testid))
     #transcribePipelineVideoByID(str(11519))
     #getLecturerData(str(11516))
-    logger.info("Kratzer module loaded.", extra={'id': 123})
+    #logger.info("Kratzer module loaded.", extra={'id': 123})

@@ -39,27 +39,25 @@ def transcribeVideoByID(id) -> str:
         logger.info(f"Fetched language from database: {language}", extra={'id': id})
     except Exception as e:
         logger.warning(f"Could not fetch language from database. {e}", extra={'id': id})
-        print(f"Could not fetch language from database. {e}")
 
     if language is None:
         logger.info(f"No language found in database, defaulting to auto detection from whisperx.", extra={'id': id})
         language = None
 
-    print(language)
     audio = whisperx.load_audio(file_path)
 
     result = model.transcribe(audio, batch_size=4, language=language)
-    print(result["segments"])
+    logger.debug(f"Transcription result segments: {result['segments']}", extra={'id': id})
 
     # Save the language before alignment
     language = result.get("language")
 
-    print("language is " + str(language))
+    logger.info("The language after transcription is " + str(language), extra={'id': id})
 
     model_a, metadata = whisperx.load_align_model(language_code=language, device=device)
     
     aligned_result = whisperx.align(result["segments"], model_a, metadata, audio, device=device, return_char_alignments=False)
-
+    logger.debug(f"Aligned result segments: {aligned_result['segments']}", extra={'id': id})
     
 
     # Add language back to aligned result for the writer

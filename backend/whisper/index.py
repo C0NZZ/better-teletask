@@ -277,7 +277,7 @@ async def lifespan(app: FastAPI):
         await forward_queue.replace(upper_ids)
     smallest_id = getSmallestTeletaskID()
     if smallest_id is not None:
-        await backward_queue.replace(list(range(smallest_id, 0, -1)))
+        await backward_queue.replace(list(range(smallest_id-1, 0, -1)))
     missing_ids = get_missing_available_inbetween_ids()
     if missing_ids:
         await in_between_queue.replace(sorted(missing_ids, reverse=True))

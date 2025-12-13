@@ -19,8 +19,6 @@ services:
       - TZ=${TZ}
       - PGTZ=${TZ}
     env_file: ".env"
-    ports:
-      - "127.0.0.1:5432:5432"
     volumes:
       - "pgdata:/var/lib/postgresql"
     command: postgres -c timezone=${TZ}

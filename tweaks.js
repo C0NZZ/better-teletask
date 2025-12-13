@@ -7,10 +7,10 @@
   const { featureSettings } = await browser.storage.local.get('featureSettings');
   if (!featureSettings) {
     const featureSettings = {
-      subtitles: true,
-      doubleclick: true,
-      noresizelimit: true,
-      kplay: true,
+        subtitles: true,
+        doubleclick: true,
+        noresizelimit: true,
+        kplay: true,
     }
     await browser.storage.local.set({ featureSettings });
   }
@@ -40,14 +40,17 @@
     if (fsBtn && typeof fsBtn.click === 'function') fsBtn.click();
   }, true);
 
-  //k press -> play/pause
+  //k press -> play/pause     &     +/- resize subtitles
   document.addEventListener('keydown', e=>{
-    if (e.key.toLowerCase() !== 'k') return;
-    
-    if (!featureSettings?.kplay) return;
-
-    const playBtn = player.shadowRoot && player.shadowRoot.querySelector('control-bar').shadowRoot.querySelector('playpause-control').shadowRoot.querySelector('#button__play_pause');
-    if (playBtn && typeof playBtn.click === 'function') playBtn.click();
+    if (e.key.toLowerCase() == 'k' || e.key == '+' || e.key == '-') {    
+      if (e.key.toLowerCase() == 'k' && featureSettings?.kplay) {
+        const playBtn = player.shadowRoot && player.shadowRoot.querySelector('control-bar').shadowRoot.querySelector('playpause-control').shadowRoot.querySelector('#button__play_pause');
+        if (playBtn && typeof playBtn.click === 'function') playBtn.click();
+      } else if ((e.key == '+' || e.key == '-') && featureSettings?.resizesubs) {
+        const subs = player.shadowRoot.querySelector('captions-display').shadowRoot.getElementById('container__captions').querySelector('.caption-cue-text');
+        subs.style.fontSize = (parseInt(window.getComputedStyle(subs, null).getPropertyValue('font-size'), 10) + (e.key == '+' ? 5 : -5)).toString() + "px";
+      }
+    } else return;
   });
 
   console.info('[btt-tweaks] tweaks applied successfully');

@@ -106,15 +106,6 @@ class AsyncQueue:
         self._queue = deque(sorted(self._queue, reverse=True))
 
 @contextlib.asynccontextmanager
-async def double_lock(queue_a: AsyncQueue, queue_b: AsyncQueue):
-    """Safely acquire both locks without risk of deadlock."""
-    first, second = sorted([queue_a, queue_b], key=id)
-    async with first._lock:
-        async with second._lock:
-            yield
-
-
-@contextlib.asynccontextmanager
 async def multi_lock(queues: List['AsyncQueue']):
     """Acquire multiple AsyncQueue locks safely, avoiding deadlocks."""
     sorted_queues = sorted(queues, key=id)
@@ -139,20 +130,6 @@ in_between_queue = AsyncQueue()
 backward_queue = AsyncQueue()
 
 in_process_queue = AsyncQueue()
-
-# new ids worker
-async def worker_check_new_ids():
-    """Check for new IDs and add them to the priority queue."""
-    upper_ids = get_upper_ids()
-    print("Checking for new IDs to add to priority queue...")
-    async with multi_lock([prio_queue, forward_queue, in_between_queue]):
-        for uid in upper_ids:
-            print(f"Checking ID: {uid}")
-            if not await prio_queue.contains_unlocked(uid) and not await forward_queue.contains_unlocked(uid) and not await in_between_queue.contains_unlocked(uid):
-                print(f"Adding new ID to priority queue: {uid}")
-                await forward_queue.add_unlocked(uid)
-    print("New IDs check complete.")
-    return
 
 async def get_id_for_worker() -> Optional[int]:
     """Get the next ID to process from the queues in order of priority."""
@@ -201,19 +178,6 @@ async def remove_id_from_in_process(id: int):
     await asyncio.sleep(1200)  # wait 20 minutes
     print(f"Removing ID {id} from in-process queue.")
     await in_process_queue.remove(id)
-
-async def worker_check_inbetween_ids():
-    """Check for missing in-between IDs and add them to the in-between queue."""
-    missing_ids = get_missing_available_inbetween_ids()
-    print("Checking for missing in-between IDs...")
-    async with multi_lock([in_between_queue._lock, backward_queue._lock, in_process_queue._lock, forward_queue._lock, prio_queue._lock]):
-        for mid in missing_ids:
-            print(f"Checking ID: {mid}")
-            if not await in_between_queue.contains_unlocked(mid) and not await backward_queue.contains_unlocked(mid) and not await in_process_queue.contains_unlocked(mid) and not await forward_queue.contains_unlocked(mid) and not await prio_queue.contains_unlocked(mid):
-                print(f"Adding missing in-between ID to queue: {mid}")
-                await in_between_queue.add_unlocked(mid)
-    print("Missing in-between IDs check complete.")
-    return
 
 async def transcribe_worker():
     """Worker that continuously processes IDs from the queues."""

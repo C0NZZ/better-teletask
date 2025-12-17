@@ -1,0 +1,87 @@
+name: Sign Browser Extension & Create Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: "Git tag for the release"
+        type: string
+        required: true
+      name:
+        description: "Name of the release"
+        type: string
+        required: true
+      make_latest:
+        description: "Whether this release should be set as latest. Drafts and prereleases cannot be set as latest"
+        type: choice
+        options:
+          - 'true'
+          - 'false'
+          - 'legacy'
+        required: false
+        default: 'true'
+      draft:
+        description: "Whether or not this release is a draft"
+        type: boolean
+        required: false
+        default: false
+      prerelease:
+        description: "Whether or not is a prerelease"
+        type: boolean
+        required: false
+        default: false
+      body:
+        description: "Release body text"
+        type: string
+        required: false
+        default: ""
+      extension_dir:
+        description: "Directory containing manifest.json"
+        type: string
+        required: false
+        default: "extension"
+
+jobs:
+  sign-and-release:
+    runs-on: debian-latest
+
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install web-ext
+        run: npm install -g web-ext
+
+      - name: Sign extension with web-ext
+        env:
+          WEB_EXT_API_KEY: ${{ secrets.AMO_JWT_ISSUER }}
+          WEB_EXT_API_SECRET: ${{ secrets.AMO_JWT_SECRET }}
+        run: |
+          web-ext sign \
+            --channel unlisted
+            --source-dir "${{ github.event.inputs.extension_dir }}" \
+            --artifacts-dir signed && \
+          mv signed/*.xpi signed/${{ github.event.inputs.release_tag }}.xpi
+
+      - name: List signed artifact file
+        run: ls -lh signed
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.event.inputs.release_tag }}
+          name: ${{ github.event.inputs.name }}
+          make_latest: ${{ github.event.inputs.make_latest }}
+          draft: ${{ github.event.inputs.draft }}
+          prerelease: ${{ github.event.inputs.prerelease }}
+          body: ${{ github.event.inputs.body }}
+          preserve_order: true
+          files: signed/${{ github.event.inputs.release_tag }}.xpi

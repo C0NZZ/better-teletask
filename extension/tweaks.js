@@ -5,15 +5,6 @@
     return;
   }
   const { featureSettings } = await browser.storage.local.get('featureSettings');
-  if (!featureSettings) {
-    const featureSettings = {
-        subtitles: true,
-        doubleclick: true,
-        noresizelimit: true,
-        kplay: true,
-    }
-    await browser.storage.local.set({ featureSettings });
-  }
 
   if (featureSettings?.noresizelimit) {
     const script = document.createElement('script');
@@ -32,26 +23,64 @@
     if (!featureSettings?.doubleclick) return;
 
     //only execute when dblclick happens inside video
-    const videoContainer = player.shadowRoot && player.shadowRoot.querySelector('#video-container');
+    const videoContainer = player.shadowRoot && player.shadowRoot.getElementById('video-container');
     const path = (typeof e.composedPath === 'function') ? e.composedPath() : (e.path || []);
     if (!path.includes(videoContainer)) return;
 
-    const fsBtn = player.shadowRoot && (player.shadowRoot.querySelector('control-bar').shadowRoot.querySelector('full-screen-control').shadowRoot.querySelector('#button__fullscreen'));
+    const fsBtn = player.shadowRoot && (player.shadowRoot.querySelector('control-bar').shadowRoot.querySelector('full-screen-control').shadowRoot.getElementById('button__fullscreen'));
     if (fsBtn && typeof fsBtn.click === 'function') fsBtn.click();
   }, true);
 
-  //k press -> play/pause     &     +/- resize subtitles
+  //k -> play/pause     &     +/- -> resize subtitles
   document.addEventListener('keydown', e=>{
-    if (e.key.toLowerCase() == 'k' || e.key == '+' || e.key == '-') {    
-      if (e.key.toLowerCase() == 'k' && featureSettings?.kplay) {
-        const playBtn = player.shadowRoot && player.shadowRoot.querySelector('control-bar').shadowRoot.querySelector('playpause-control').shadowRoot.querySelector('#button__play_pause');
-        if (playBtn && typeof playBtn.click === 'function') playBtn.click();
-      } else if ((e.key == '+' || e.key == '-') && featureSettings?.resizesubs) {
+    switch (e.key.toLowerCase()) {
+      case 'k': if (featureSettings?.kplay) {
+        const playBtn = player.shadowRoot && player.shadowRoot.querySelector('control-bar').shadowRoot.querySelector('playpause-control').shadowRoot.getElementById('button__play_pause');
+        playBtn.click();
+        break;
+      }
+      case '+': case '-': if (featureSettings?.resizesubs) {
         const subs = player.shadowRoot.querySelector('captions-display').shadowRoot.getElementById('container__captions').querySelector('.caption-cue-text');
         subs.style.fontSize = (parseInt(window.getComputedStyle(subs, null).getPropertyValue('font-size'), 10) + (e.key == '+' ? 5 : -5)).toString() + "px";
+        break;
       }
-    } else return;
+      case 'r': if  (featureSettings?.movesubs) {
+        const subbox = player.shadowRoot.querySelector('captions-display').shadowRoot.getElementById('container__captions');
+        subbox.removeAttribute('style');
+        break;
+      }
+      default: return;
+    }
   });
+
+  //drag subs
+  if (featureSettings?.movesubs) {
+    const subbox = player.shadowRoot.querySelector('captions-display').shadowRoot.getElementById('container__captions');
+    
+    let draggingSubs = false;
+    subbox.addEventListener("mousedown", (e) => {
+      const path = (typeof e.composedPath === 'function') ? e.composedPath() : (e.path || []);
+      if (!path.includes(subbox)) return;
+      draggingSubs = true;
+      const rect = subbox.getBoundingClientRect();
+      offsetX = e.clientX - rect.left;
+      offsetY = e.clientY - rect.top;
+    });
+
+    document.addEventListener("mouseup", () => {
+      if (draggingSubs) {
+        draggingSubs = false;
+      }
+    });
+
+    document.addEventListener("mousemove", (e) => {
+      if (draggingSubs) {
+        const parentRect = player.shadowRoot.getElementById('video-player-container').getBoundingClientRect();
+        subbox.style.left = (e.clientX - parentRect.left - offsetX) + "px";
+        subbox.style.top  = (e.clientY - parentRect.top  - offsetY + 5) + "px"; //5 counters the bottom in upstream, cant be set before cause it would fuck up when a click without dragging happens
+      }
+    });
+  }
 
   console.info('[btt-tweaks] tweaks applied successfully');
 })();

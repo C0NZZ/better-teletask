@@ -12,7 +12,7 @@ on:
         type: string
         required: true
       make_latest:
-        description: "Whether this release should be set as latest. Drafts and prereleases cannot be set as latest"
+        description: "Whether this release should be set as latest (not possible for drafts and prereleases)"
         type: choice
         options:
           - 'true'
@@ -69,7 +69,7 @@ jobs:
             --channel unlisted
             --source-dir "${{ github.event.inputs.extension_dir }}" \
             --artifacts-dir signed && \
-          mv signed/*.xpi signed/${{ github.event.inputs.release_tag }}.xpi
+          mv signed/*.xpi signed/btt-${{ github.event.inputs.release_tag }}.xpi
 
       - name: List signed artifact file
         run: ls -lh signed
@@ -77,11 +77,11 @@ jobs:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ github.event.inputs.release_tag }}
-          name: ${{ github.event.inputs.name }}
-          make_latest: ${{ github.event.inputs.make_latest }}
-          draft: ${{ github.event.inputs.draft }}
-          prerelease: ${{ github.event.inputs.prerelease }}
-          body: ${{ github.event.inputs.body }}
+          tag_name: "v${{ github.event.inputs.release_tag }}"
+          name: "v${{ github.event.inputs.release_tag }}: ${{ github.event.inputs.name }}"
+          make_latest: "${{ github.event.inputs.make_latest }}"
+          draft: "${{ github.event.inputs.draft }}"
+          prerelease: "${{ github.event.inputs.prerelease }}"
+          body: "${{ github.event.inputs.body }}"
           preserve_order: true
-          files: signed/${{ github.event.inputs.release_tag }}.xpi
+          files: "signed/btt-${{ github.event.inputs.release_tag }}.xpi"

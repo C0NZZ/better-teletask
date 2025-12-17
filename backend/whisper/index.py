@@ -13,6 +13,11 @@ from database import (
 )
 from kratzer import get_upper_ids, pingVideoByID, transcribePipelineVideoByID
 
+# setup logging
+import logger
+import logging
+logger = logging.getLogger("btt_root_logger")
+
 class AsyncQueue:
     def __init__(self):
         self._queue = deque()
@@ -90,7 +95,7 @@ class AsyncQueue:
         """Return all items without lock."""
         return list(self._queue)
 
-    async def replace_unlocked(self, new_items: list[str]):
+    async def replace_unlocked(self, new_items: list[str]) -> None:
         """Replace the queue without lock."""
         self._queue = deque(dict.fromkeys(new_items))  # deduplicate & preserve order
 
@@ -133,71 +138,64 @@ in_process_queue = AsyncQueue()
 
 async def get_id_for_worker() -> Optional[int]:
     """Get the next ID to process from the queues in order of priority."""
-    from_queue = -1
-    id = -1
-    print("Getting ID for worker...")
+    logger.info("Getting ID for worker...")
     async with multi_lock([prio_queue, forward_queue, in_between_queue, backward_queue]):
-        print("got locks for all queues")
+        logger.debug("Got locks for all queues")
         if await prio_queue.peek_unlocked() is not None:
-            print("Found ID in priority queue")
-            from_queue = 0
             id = await prio_queue.dequeue_unlocked()
+            logger.info(f"Found ID {id} in priority queue")
         elif await forward_queue.peek_unlocked() is not None:
-            print("Found ID in forward queue")
-            from_queue = 1
             id = await forward_queue.dequeue_unlocked()
+            logger.info(f"Found ID {id} in forward queue")
         elif await in_between_queue.peek_unlocked() is not None:
-            print("Found ID in in-between queue")
-            from_queue = 2
             id = await in_between_queue.dequeue_unlocked()
+            logger.info(f"Found ID {id} in in-between queue")
         elif await backward_queue.peek_unlocked() is not None:
-            print("Found ID in backward queue")
-            from_queue = 3
             id = await backward_queue.dequeue_unlocked()
-    if id != -1:
+            logger.info(f"Found ID {id} in backward queue")
+    if id is not None:
         res = pingVideoByID(str(id))
         if original_language_exists(id):
-            print(f"ID {id} from queue {from_queue} already has original language, skipping.")
+            logger.info(f"ID {id} already has original language, skipping.")
             return await get_id_for_worker()
         elif res == "200":
-            print(f"Fetched ID {id} from queue {from_queue}")
+            logger.info(f"Fetched ID {id} from queue and it is available for processing, starting worker")
             # call a set timeout function that will add the id to in_process_queue and remove it after some time
             await in_process_queue.add_unlocked(id)
             asyncio.create_task(remove_id_from_in_process(id))
 
             return id
         else:
-            print(f"ID {id} from queue {from_queue} not available (response: {res}), trying next ID.")
+            logger.info(f"ID {id} not HTTP 200 (response: {res}), trying next ID.")
             return await get_id_for_worker()
     else:
         return None
 
 async def remove_id_from_in_process(id: int):
     """Remove an ID from the in-process queue."""
-    print(f"ID {id} will be removed from in-process queue after timeout.")
+    logger.debug(f"ID {id} will be removed from in-process queue after timeout.")
     await asyncio.sleep(1200)  # wait 20 minutes
-    print(f"Removing ID {id} from in-process queue.")
+    logger.debug(f"Removing ID {id} from in-process queue.")
     await in_process_queue.remove(id)
 
 async def transcribe_worker():
     """Worker that continuously processes IDs from the queues."""
     sleep_time = 40
     await asyncio.sleep(10)  # Initial delay before starting
-    print("Transcribe worker started.")
+    logger.info("Transcribe worker started.")
     while True:
         id = await get_id_for_worker()
-        print(f"Got ID for worker: {id}")
+        logger.info(f"Got ID for worker: {id}")
         if id is not None:
-            print(f"Transcribing ID: {id}")
-            # transcribePipelineVideoByID is a blocking function; run it in a thread so it
-            # doesn't block the event loop and the FastAPI server can continue handling requests.
+            logger.info(f"Transcribing ID: {id}")
             try:
+                logger.debug(f"Starting transcription for ID {id} in separate thread.")
                 await asyncio.to_thread(transcribePipelineVideoByID, str(id))
             except Exception as e:
-                print(f"Transcription failed for ID {id}: {e}")
+                logger.error(f"Transcription failed for ID {id}: {e}")
             # await asyncio.sleep(1000)
         else:
-            print(f"No IDs available to transcribe, waiting {sleep_time} seconds...")
+            logger.info(f"No IDs available to transcribe, waiting {sleep_time} seconds...")
             await asyncio.sleep(sleep_time)  # Wait before checking again
         
 async def update_upper_ids_periodically():
@@ -205,14 +203,14 @@ async def update_upper_ids_periodically():
     sleep_time = 1200
     await asyncio.sleep(5)
     while True:
-        print("Updating upper IDs...")
+        logger.info("Updating upper IDs...")
         upper_ids = get_upper_ids()
-        async with multi_lock([forward_queue, in_process_queue]):
+        async with multi_lock([forward_queue, in_process_queue, prio_queue]):
             for uid in upper_ids:
-                if not await forward_queue.contains_unlocked(uid) and not await in_process_queue.contains_unlocked(uid):
-                    print(f"Adding new upper ID to forward queue: {uid}")
+                if not await forward_queue.contains_unlocked(uid) and not await in_process_queue.contains_unlocked(uid) and not await prio_queue.contains_unlocked(uid):
+                    logger.info(f"Adding new upper ID to forward queue: {uid}")
                     await forward_queue.add_unlocked(uid)
-        print(f"Upper IDs update complete. Sleeping for {sleep_time // 60} minutes.")
+        logger.info(f"Upper IDs update complete. Sleeping for {sleep_time // 60} minutes.")
         await asyncio.sleep(sleep_time)
 
 async def update_inbetween_ids_periodically():
@@ -220,17 +218,17 @@ async def update_inbetween_ids_periodically():
     sleep_time = 1200
     await asyncio.sleep(30)
     while True:
-        print("Updating in-between IDs...")
+        logger.info("Updating in-between IDs...")
         missing_ids = get_missing_available_inbetween_ids()
-        async with multi_lock([in_between_queue, backward_queue]):
+        async with multi_lock([in_between_queue, backward_queue, in_process_queue, prio_queue]):
             for mid in missing_ids:
-                if not await in_between_queue.contains_unlocked(mid):
+                if not await in_between_queue.contains_unlocked(mid) and not await in_process_queue.contains_unlocked(mid) and not await prio_queue.contains_unlocked(mid):
                     await in_between_queue.add_unlocked(mid)
                     if await backward_queue.contains_unlocked(mid):
-                        print(f"Removing ID {mid} from backward queue as it's now in in-between queue.")
+                        logger.info(f"Removing ID {mid} from backward queue as it's now in in-between queue.")
                         await backward_queue.remove_unlocked(mid)
             await in_between_queue.sort_reverse_unlocked()
-        print(f"In-between IDs update complete. Sleeping for {sleep_time // 60} minutes.")
+        logger.info(f"In-between IDs update complete. Sleeping for {sleep_time // 60} minutes.")
         await asyncio.sleep(sleep_time) 
 
 @contextlib.asynccontextmanager
@@ -246,10 +244,10 @@ async def lifespan(app: FastAPI):
     if missing_ids:
         await in_between_queue.replace(sorted(missing_ids, reverse=True))
 
-    print("Application startup: Queues initialized.")
-    print("Forward queue:", await forward_queue.get_all())
-    print("In-between queue:", await in_between_queue.get_all())
-    print("Backward queue:", await backward_queue.get_all())
+    logger.info("Application startup: Queues initialized.")
+    logger.info("Forward queue: %s", await forward_queue.get_all())
+    logger.info("In-between queue: %s", await in_between_queue.get_all())
+    logger.info("Backward queue: %s", await backward_queue.get_all())
     
     # Start background tasks
     transcribe_worker_task = asyncio.create_task(transcribe_worker())
@@ -261,8 +259,8 @@ async def lifespan(app: FastAPI):
     try:
         await transcribe_worker_task
     except asyncio.CancelledError:
-        print("Transcribe worker task cancelled.")
-    print("Application shutdown: Cleanup complete.")
+        logger.error("Can not cancel transcribe worker task.")
+    logger.info("Cancelled transcribe worker task.")
 
     # Cancel background tasks
     update_upper_ids_task.cancel()
@@ -270,11 +268,15 @@ async def lifespan(app: FastAPI):
     try:
         await update_upper_ids_task
     except asyncio.CancelledError:
-        print("Update upper IDs task cancelled.")
+        logger.error("Can not cancel update upper IDs task.")
+    logger.info("Cancelled update upper IDs task.")
     try:
         await update_inbetween_ids_task
     except asyncio.CancelledError:
-        print("Update in-between IDs task cancelled.")
+        logger.error("Can not cancel update in-between IDs task.")
+    logger.info("Cancelled update in-between IDs task.")
+
+    logger.info("Application shutdown complete.")
 
 # Initialize FastAPI with the lifespan
 app = FastAPI(lifespan=lifespan)
@@ -305,25 +307,25 @@ async def prioritize_id(id: int):
     if res == "200":
         async with multi_lock([prio_queue, forward_queue, in_between_queue, backward_queue, in_process_queue]):
             if await in_process_queue.contains_unlocked(id):
-                print(f"ID {id} is currently being processed; cannot prioritize.")
+                logger.info(f"ID {id} is currently being processed; cannot prioritize.")
                 return {"message": f"ID {id} is currently being processed; cannot prioritize."}
             if await prio_queue.contains_unlocked(id):
-                print(f"ID {id} is already in priority queue.")
+                logger.info(f"ID {id} is already in priority queue.")
                 return {"message": f"ID {id} was already prioritized."}
             if await forward_queue.contains_unlocked(id):
                 await forward_queue.remove_unlocked(id)
-                print(f"Removed ID {id} from forward queue for prioritization.")
+                logger.info(f"Removed ID {id} from forward queue for prioritization.")
             if await in_between_queue.contains_unlocked(id):
                 await in_between_queue.remove_unlocked(id)
-                print(f"Removed ID {id} from in-between queue for prioritization.")
+                logger.info(f"Removed ID {id} from in-between queue for prioritization.")
             if await backward_queue.contains_unlocked(id):
                 await backward_queue.remove_unlocked(id)
-                print(f"Removed ID {id} from backward queue for prioritization.")
+                logger.info(f"Removed ID {id} from backward queue for prioritization.")
             await prio_queue.add_unlocked(id)
-            print(f"Added ID {id} to priority queue.")
+            logger.info(f"Added ID {id} to priority queue.")
             return {"message": f"ID {id} prioritized."}
     else:
-        print(f"ID {id} cannot be prioritized as it is not available (response: {res}).")
+        logger.error(f"ID {id} cannot be prioritized as it is not available (response: {res}).")
         return {"message": f"ID {id} cannot be prioritized as it is not available."}
 
 

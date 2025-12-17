@@ -1,11 +1,11 @@
 <!doctype html>
-<html lang="de">
+<html lang="en">
   <head>
     <meta charset="utf-8"/>
-    <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>Better Tele-Task</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1"/>
     <link rel="stylesheet" href="style.css">
     <script src="../browser-polyfill.min.js"></script>
+    <script src="popup.js"></script>
   </head>
 
   <body>
@@ -14,6 +14,11 @@
         <img src="../icons/32.png" height="24px">
         <h1>Better Tele-Task</h1><h2>Settings</h2>
       </header>
+      <footer class="card-footer">
+        <small>
+          <a id="featuresReload">Reload</a> the page for changes to take effect.
+        </small>
+      </footer>
     </div>
     <div class="card" id="apikey">
       <details>
@@ -68,6 +73,10 @@
             <input type="checkbox" id="featuresResizesubs" name="features" value="resizesubs">
             Resize subtitles using +/-
           </label><br>
+          <label for="featuresMovesubs">
+            <input type="checkbox" id="featuresMovesubs" name="features" value="movesubs">
+            Drag subtitles (r to reset)
+          </label><br>
           <div class="input-group">
             <button id="featuresSave" class="btn-primary" type="button" aria-label="Save feature settings">Save</button>
             <div id="featuresStatus" class="status">
@@ -79,11 +88,6 @@
             </div>
           </div>
         </main>
-        <footer class="card-footer">
-          <small>
-            <a id="featuresReload">Reload</a> the page for changes to take effect.
-          </small>
-        </footer>
       </details>
     </div>
     <div class="card" id="feedback">
@@ -92,7 +96,5 @@
         Visit <a href="https://github.com/C0NZZ/better-teletask">GitHub</a> for more information.<br>For questions, see our <a href="https://github.com/C0NZZ/better-teletask/wiki/FAQ">FAQ</a> or contact us directly.
       </main>
     </div>
-
-    <script src="popup.js"></script>
   </body>
 </html>

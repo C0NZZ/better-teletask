@@ -65,6 +65,11 @@
       const rect = subbox.getBoundingClientRect();
       offsetX = e.clientX - rect.left;
       offsetY = e.clientY - rect.top;
+      if (subbox.style.getPropertyValue('bottom') != "initial") {
+        const parentRect = player.shadowRoot.getElementById('video-player-container').getBoundingClientRect();
+        subbox.style.top = (rect.top - parentRect.top) + "px";
+        subbox.style.bottom = "initial";
+      }
     });
 
     document.addEventListener("mouseup", () => {
@@ -77,7 +82,7 @@
       if (draggingSubs) {
         const parentRect = player.shadowRoot.getElementById('video-player-container').getBoundingClientRect();
         subbox.style.left = (e.clientX - parentRect.left - offsetX) + "px";
-        subbox.style.top  = (e.clientY - parentRect.top  - offsetY + 5) + "px"; //5 counters the bottom in upstream, cant be set before cause it would fuck up when a click without dragging happens
+        subbox.style.top  = (e.clientY - parentRect.top  - offsetY) + "px";
       }
     });
   }

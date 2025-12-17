@@ -29,6 +29,7 @@ DB_PORT = os.environ.get("DB_PORT")
 
 
 def initDatabase():
+    conn = None
     try:
         # --- Connect to PostgreSQL ---
         conn = psycopg2.connect(
@@ -464,6 +465,7 @@ def remove_api_key(api_key):
             conn.close()
 
 def clearDatabase():
+    conn = None
     try:
         # --- Connect to PostgreSQL ---
         conn = psycopg2.connect(
@@ -796,13 +798,13 @@ def databaseTestScript():
 
 
 if __name__ == "__main__":
-    clearDatabase()
+    #clearDatabase()
     initDatabase()
     #print(get_language_of_lecture(11516))
-    save_vtt_as_blob(11408, "de", True)
-    save_vtt_as_blob(11406, "de", True)
-    save_vtt_as_blob(11405, "de", True)
-    save_vtt_as_blob(11402, "de", True)
+    #save_vtt_as_blob(11408, "de", True)
+    #save_vtt_as_blob(11406, "de", True)
+    #save_vtt_as_blob(11405, "de", True)
+    #save_vtt_as_blob(11402, "de", True)
     #save_vtt_as_blob(11402, "en", False)
     #add_id_to_blacklist(11406, "404")
     #get_all_vtt_blobs()

@@ -55,7 +55,7 @@ def initDatabase():
                 originalLang VARCHAR(50),
                 date DATE,
                 lecturer_id INTEGER,
-                lecturer VARCHAR(255),
+                series_id INTEGER,
                 semester VARCHAR(50),
                 duration INTERVAL,
                 title VARCHAR(255),
@@ -252,13 +252,13 @@ def add_lecture_data(lecture_data):
 
          
         cur.execute(
-            "INSERT INTO lecture_data (teletaskid, originalLang, date, lecturer_id, lecturer, semester, duration, title, video_mp4) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s);",
+            "INSERT INTO lecture_data (teletaskid, originalLang, date, lecturer_id, series_id, semester, duration, title, video_mp4) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s);",
             (
                 teletaskid,
                 language,
                 date,
                 lecturer_id,
-                lecturer_name,
+                series_id,
                 semester,
                 duration,
                 lecture_title,

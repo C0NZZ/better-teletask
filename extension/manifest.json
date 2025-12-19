@@ -28,13 +28,14 @@
   "content_scripts": [
     {
       "matches": ["https://www.tele-task.de/lecture/video/*"],
-      "js": ["browser-polyfill.min.js", "tweaks.js", "subtitles.js"]
+      "js": ["browser-polyfill.min.js", "main.js", "subtitles.js"]
     }
   ],
 
   "browser_specific_settings": {
     "gecko": {
       "id": "{dc4e1e72-761b-420d-ba9b-d6e69fb18d86}",
+      "strict_min_version": "82.0",
       "data_collection_permissions": {
         "required": ["authenticationInfo"]
       },

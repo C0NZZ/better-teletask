@@ -43,7 +43,7 @@ on:
 
 jobs:
   sign-and-release:
-    runs-on: debian-latest
+    runs-on: ubuntu-latest
 
     permissions:
       contents: write
@@ -59,6 +59,51 @@ jobs:
 
       - name: Install web-ext
         run: npm install -g web-ext
+
+      - name: Lint extension
+        run: |
+          web-ext lint \
+            --source-dir "." \
+            --ignore-files=lint-output.json \
+            --self-hosted true \
+            --output json > lint-output.json || true
+
+          node -e '
+            const fs = require("fs");
+            const output = JSON.parse(fs.readFileSync("lint-output.json", "utf8"));
+
+            console.log("\n=== web-ext lint results ===\n");
+
+            console.log("metadata:", output.metadata, "\n" || "")
+
+            const errors = output.errors || [];
+            const warnings = output.warnings || [];
+            const notices = output.notices || [];
+
+            if (notices.length > 0) {
+              console.log("Notices:");
+              notices.forEach(n => console.log("  ℹ️", n.message));
+              console.log("");
+            }
+
+            if (warnings.length > 0) {
+              console.log("Warnings:");
+              warnings.forEach(w => console.log("  ⚠️", w.message));
+              console.log("");
+            }
+
+            if (errors.length > 0) {
+              console.log("Errors:");
+              errors.forEach(e => {
+                console.log("  ❌", e.message);
+              });
+              console.log("");
+            console.error("Build failed due to critical linting errors!");
+              process.exit(1);
+            } else {
+              console.log("✅ Lint passed (no critical errors)");
+            }
+          '
 
       - name: Sign extension with web-ext
         env:

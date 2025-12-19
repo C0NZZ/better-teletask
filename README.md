@@ -15,7 +15,7 @@ BTT also adds some quality-of-life features to the Tele-Task player to make it m
 
 - Double-clicks on the video player toggle fullscreen
 - You can resize both of the videos (camera and screen recording) to 100% width, effectively allowing a fullscreen view of one of the videos
-- Pressing "k" on your keyboard pauses/plays the video, like on YouTube
+- Pressing the dedicated play/pause key or "k" on your keyboard pauses/plays the video
 
 ## Installation
 

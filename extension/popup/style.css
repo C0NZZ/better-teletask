@@ -27,7 +27,7 @@ body {
   gap: 1rem;
   align-items: center;
   justify-content: center;
-  padding: 18px;
+  padding: 1rem;
   color: #e6eef6;
   line-height: 1.35;
   font-size: var(--font-size);
@@ -39,7 +39,7 @@ body {
   background: rgba(0, 0, 0, 0.3);
   border: 1px solid rgba(255,255,255,0.04);
   border-radius: var(--radius);
-  padding: 18px;
+  padding: 1rem;
   box-shadow: 0 8px 30px rgba(2,6,23,0.6), inset 0 1px 0 rgba(255,255,255,0.02);
   backdrop-filter: blur(6px);
 }
@@ -62,6 +62,7 @@ h2 {
   font-weight: 400;
 }
 .card-header {
+  margin-top: -1px;
   font-size: 1rem;
   letter-spacing: 0.2px;
   font-weight: 600;
@@ -126,9 +127,7 @@ input, label {
   justify-content: center;
   transition: opacity .12s;
 }
-#apikeyToggle:hover {
-  opacity: 1;
-}
+#apikeyToggle:hover {opacity: 1;}
 
 .btn-primary {
   --btn-bg: linear-gradient(180deg, rgba(231, 166, 110, 0.16), rgba(231, 175, 110, 0.06));
@@ -142,12 +141,13 @@ input, label {
   font-size: 0.92rem;
   transition: transform .08s ease, box-shadow .12s;
 }
-.btn-primary:hover {transform: translateY(-1px); box-shadow: 0 6px 22px rgba(231, 181, 110, 0.06)}
+.btn-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 22px rgba(231, 181, 110, 0.06)
+}
 .btn-primary:active {transform: translateY(0)}
 
-#featuresSave.btn-primary {
-  margin-top: 0.7rem;
-}
+#featuresSave.btn-primary {margin-top: 0.7rem;}
 
 [type="checkbox"] {accent-color: var(--ttyellow);}
 [type="checkbox"]:hover {accent-color: var(--accent);}

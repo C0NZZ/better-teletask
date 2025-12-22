@@ -296,9 +296,9 @@ def getLecturerData(id, response, url):
             
             lecturer_name = lecture_info_div.get_text()
             
-            print(lecture_info_div)
+            # print(lecture_info_div)
 
-            print("------------")
+            # print("------------")
             lecture_name= lecture_info_div.find("h3").get_text()
             print("Lecture Name: " + lecture_name)
             h5 = lecture_info_div.find("h5")

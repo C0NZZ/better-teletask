@@ -39,7 +39,7 @@ def transcribeVideoByID(id) -> str:
         audio = whisperx.load_audio(file_path)
 
         result = model.transcribe(audio, batch_size=4, language=language)
-        print(result["segments"])
+        # print(result["segments"])
 
         # Save the language before alignment
         language = result.get("language")

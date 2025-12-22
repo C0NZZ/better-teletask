@@ -131,8 +131,6 @@ async def multi_lock(queues: List['AsyncQueue']):
             lock.release()
 
 
-
-
 app = FastAPI()
 
 prio_queue = AsyncQueue()

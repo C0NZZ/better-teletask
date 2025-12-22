@@ -48,9 +48,9 @@ def initDatabase():
             CREATE TABLE IF NOT EXISTS lecture_data (
                 teletaskid INTEGER PRIMARY KEY, 
                 originalLang VARCHAR(50),
-                date TIMESTAMPTZ,
+                date DATE,
                 lecturer_id INTEGER,
-                lecturer VARCHAR(255),
+                series_id INTEGER,
                 semester VARCHAR(50),
                 duration INTERVAL,
                 title VARCHAR(255),
@@ -157,7 +157,7 @@ def add_lecture_data(lecture_data):
         cur = conn.cursor()
 
         print(f"Adding lecture data for Teletask ID {lecture_data['teletask_id']}")
-        print(lecture_data)
+        # print(lecture_data)
 
         teletaskid = lecture_data['teletask_id']
         lecturer_id = lecture_data['lecturer_id']
@@ -172,7 +172,7 @@ def add_lecture_data(lecture_data):
         series_name = lecture_data['series_name']
         url = lecture_data['url']
 
-        print(date)
+        # print(date)
         if date.month < 3 or date.month > 10:
             semester = f"WT {date.year-1}/{date.year}"
         else:
@@ -203,13 +203,13 @@ def add_lecture_data(lecture_data):
 
          
         cur.execute(
-            "INSERT INTO lecture_data (teletaskid, originalLang, date, lecturer_id, lecturer, semester, duration, title, video_mp4) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s);",
+            "INSERT INTO lecture_data (teletaskid, originalLang, date, lecturer_id, series_id, semester, duration, title, video_mp4) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s);",
             (
                 teletaskid,
                 language,
                 date,
                 lecturer_id,
-                lecturer_name,
+                series_id,
                 semester,
                 duration,
                 lecture_title,
@@ -493,7 +493,7 @@ def save_vtt_as_blob(teletaskid, language, isOriginalLang):
         )
 
         conn.commit()
-        print(f"Successfully saved '{file_path}' as BLOB.")
+        print(f"Successfully saved '{file_path}' as BLOB.\n------------")
 
     except (Exception, psycopg2.Error) as error:
         print("Error while connecting to PostgreSQL", error)
@@ -579,7 +579,7 @@ def get_missing_inbetween_ids():
         """)
         rows = cur.fetchall()
         ids = [row[0] for row in rows]  # extract the first element from each tuple
-        print(ids)
+        # print(ids)
         return ids
 
 
@@ -603,7 +603,7 @@ def get_blacklisted_ids(): # TODO
           cur.execute("SELECT teletaskid FROM blacklist_ids;")
           rows = cur.fetchall()
           ids = [row[0] for row in rows]  # extract the first element from each tuple
-          print(ids)
+          # print(ids)
           return ids
     
      except (Exception, psycopg2.Error) as error:
@@ -616,9 +616,9 @@ def get_blacklisted_ids(): # TODO
     
 def get_missing_available_inbetween_ids():
     initial_ids = get_missing_inbetween_ids()
-    print(initial_ids)
+    # print(initial_ids)
     blacklisted_ids = get_blacklisted_ids()
-    print(blacklisted_ids)
+    # print(blacklisted_ids)
     print(list(set(initial_ids) - set(blacklisted_ids)))
     return list(set(initial_ids) - set(blacklisted_ids))
 
@@ -641,7 +641,7 @@ def get_missing_translations():
         """)
         rows = cur.fetchall()
         id_lang_pairs = [(row[0],row[1]) for row in rows]  # extract the first element from each tuple
-        print(id_lang_pairs)
+        # print(id_lang_pairs)
 
 
     except (Exception, psycopg2.Error) as error:

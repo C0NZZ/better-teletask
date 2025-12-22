@@ -33,6 +33,7 @@ formatter = SafeFormatter(
 
 root_logger = logging.getLogger("btt_root_logger")
 root_logger.setLevel(logging.DEBUG) # This must let everything pass
+root_logger.propagate = False  # Prevent duplicate logging to Python's root logger
 
 
 file_handler = logging.FileHandler(LOG_FILE_PATH, mode='a', encoding='utf-8')

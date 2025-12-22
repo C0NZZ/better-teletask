@@ -111,12 +111,12 @@ jobs:
           WEB_EXT_API_SECRET: ${{ secrets.AMO_JWT_SECRET }}
         run: |
           web-ext sign \
-            --channel unlisted
             --source-dir "${{ github.event.inputs.extension_dir }}" \
+            --channel unlisted
             --artifacts-dir signed && \
           mv signed/*.xpi signed/btt-${{ github.event.inputs.release_tag }}.xpi
 
-      - name: List signed artifact file
+      - name: Show signed artifact file
         run: ls -lh signed
 
       - name: Create GitHub Release

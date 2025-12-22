@@ -245,10 +245,10 @@ async def lifespan(app: FastAPI):
         await in_between_queue.replace(sorted(missing_ids, reverse=True))
 
     logger.info("Application startup: Queues initialized.")
-    logger.info("Forward queue: %s", await forward_queue.get_all())
-    logger.info("In-between queue: %s", await in_between_queue.get_all())
-    logger.info("Backward queue: %s", await backward_queue.get_all())
-    
+    logger.debug("Forward queue: %s", await forward_queue.get_all())
+    logger.debug("In-between queue: %s", await in_between_queue.get_all())
+    logger.debug("Backward queue: %s", await backward_queue.get_all())
+
     # Start background tasks
     transcribe_worker_task = asyncio.create_task(transcribe_worker())
     update_upper_ids_task = asyncio.create_task(update_upper_ids_periodically())

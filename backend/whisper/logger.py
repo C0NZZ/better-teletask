@@ -36,7 +36,7 @@ root_logger.setLevel(logging.DEBUG) # This must let everything pass
 
 
 file_handler = logging.FileHandler(LOG_FILE_PATH, mode='a', encoding='utf-8')
-file_handler.setLevel(logging.DEBUG) # Everything to file, could have multiple file handlers with different levels
+file_handler.setLevel(logging.INFO) # Everything to file, could have multiple file handlers with different levels
 file_handler.setFormatter(formatter)
 root_logger.addHandler(file_handler)
 

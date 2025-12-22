@@ -677,7 +677,7 @@ def get_blacklisted_ids(): # TODO
 def get_missing_available_inbetween_ids():
     initial_ids = get_missing_inbetween_ids()
     blacklisted_ids = get_blacklisted_ids()
-    print(list(set(initial_ids) - set(blacklisted_ids)))
+    logger.debug(list(set(initial_ids) - set(blacklisted_ids)))
     return list(set(initial_ids) - set(blacklisted_ids))
 
 

@@ -112,7 +112,7 @@ jobs:
         run: |
           web-ext sign \
             --source-dir "${{ github.event.inputs.extension_dir }}" \
-            --channel unlisted
+            --channel unlisted \
             --artifacts-dir signed && \
           mv signed/*.xpi signed/btt-${{ github.event.inputs.release_tag }}.xpi
 

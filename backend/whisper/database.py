@@ -3,14 +3,19 @@ from psycopg2 import extensions
 import os
 from dotenv import load_dotenv, find_dotenv
 from datetime import datetime
-from logger import log
+
+
+# setup logging
+import logger
+import logging
+logger = logging.getLogger("btt_root_logger")
 
 load_dotenv(find_dotenv())
 
 OUTPUTFOLDER = os.environ.get("VTT_DEST_FOLDER")
 MODEL = os.environ.get("ASR_MODEL")
 COMPUTE_TYPE = os.environ.get("COMPUTE_TYPE")
-# print(OUTPUTFOLDER)
+
 
 script_dir = os.path.dirname(os.path.abspath(__file__))
 input_path = os.path.join(script_dir, OUTPUTFOLDER)
@@ -24,14 +29,14 @@ DB_PORT = os.environ.get("DB_PORT")
 
 
 def initDatabase():
+    conn = None
     try:
         # --- Connect to PostgreSQL ---
         conn = psycopg2.connect(
             dbname=DB_NAME, user=DB_USER, password=DB_PASS, host=DB_HOST, port=DB_PORT
         )
         cur = conn.cursor()
-
-        print("connected")
+        logger.info("Initialized database connection.")
         conn.set_isolation_level(extensions.ISOLATION_LEVEL_AUTOCOMMIT)
         # TODO Rename: teletaskid to teletask_id, originalLang to original_lang, isOriginalLang to is_original_lang
         cur.execute(
@@ -91,7 +96,55 @@ def initDatabase():
             """)
 
     except (Exception, psycopg2.Error) as error:
-        print("Error while connecting to PostgreSQL", error)
+        logger.error("Error while connecting to PostgreSQL", error)
+    finally:
+        if conn:
+            cur.close()
+            conn.close()
+
+def get_all_lecture_ids():
+    conn = None
+    try:
+        # --- Connect to PostgreSQL ---
+        conn = psycopg2.connect(
+            dbname=DB_NAME, user=DB_USER, password=DB_PASS, host=DB_HOST, port=DB_PORT
+        )
+        cur = conn.cursor()
+
+        # --- Query all records ---
+        cur.execute("SELECT teletaskid FROM lecture_data;")
+        rows = cur.fetchall()
+        ids = [row[0] for row in rows]  # extract the first element from each tuple
+        logger.debug(f"Fetched all lecture IDs: {ids}")
+        return ids
+
+    except (Exception, psycopg2.Error) as error:
+        logger.error("Error while querying PostgreSQL", error)
+        return []
+    finally:
+        if conn:
+            cur.close()
+            conn.close()
+
+def get_all_original_vtt_ids():
+    conn = None
+    try:
+        # --- Connect to PostgreSQL ---
+        conn = psycopg2.connect(
+            dbname=DB_NAME, user=DB_USER, password=DB_PASS, host=DB_HOST, port=DB_PORT
+        )
+        cur = conn.cursor()
+
+        # --- Query all records ---
+        cur.execute("SELECT teletaskid FROM vtt_files WHERE isOriginalLang = TRUE;")
+        rows = cur.fetchall()
+        ids = [row[0] for row in rows]  # extract the first element from each tuple
+        logger.debug(f"Fetched all original VTT IDs: {ids}")
+        return ids
+
+    except (Exception, psycopg2.Error) as error:
+        logger.error("Error while querying PostgreSQL", error)
+        return []
     finally:
         if conn:
             cur.close()
@@ -115,7 +168,7 @@ def series_id_exists(series_id):
         return count > 0
 
     except (Exception, psycopg2.Error) as error:
-        print("Error while querying PostgreSQL", error)
+        logger.error("Error while querying PostgreSQL", error)
         return False
     finally:
         if conn:
@@ -140,7 +193,7 @@ def lecturer_id_exists(lecturer_id):
         return count > 0
 
     except (Exception, psycopg2.Error) as error:
-        print("Error while querying PostgreSQL", error)
+        logger.error("Error while querying PostgreSQL", error)
         return False
     finally:
         if conn:
@@ -156,9 +209,6 @@ def add_lecture_data(lecture_data):
         )
         cur = conn.cursor()
 
-        print(f"Adding lecture data for Teletask ID {lecture_data['teletask_id']}")
-        # print(lecture_data)
-
         teletaskid = lecture_data['teletask_id']
         lecturer_id = lecture_data['lecturer_id']
         lecturer_name = lecture_data['lecturer_name']
@@ -172,7 +222,6 @@ def add_lecture_data(lecture_data):
         series_name = lecture_data['series_name']
         url = lecture_data['url']
 
-        # print(date)
         if date.month < 3 or date.month > 10:
             semester = f"WT {date.year-1}/{date.year}"
         else:
@@ -187,7 +236,7 @@ def add_lecture_data(lecture_data):
                     lecturer_name
                 ),
             )
-            print(f"Added lecturer data for Lecturer ID {lecturer_id}.")
+            logger.info(f"Added lecturer data for Lecturer ID {lecturer_id}.", extra={'id': teletaskid})
             conn.commit()
         if not series_id_exists(series_id):
             cur.execute(
@@ -198,7 +247,7 @@ def add_lecture_data(lecture_data):
                     lecturer_id
                 ),
             )
-            print(f"Added series data for Series ID {series_id}.")
+            logger.info(f"Added series data for Series ID {series_id}.", extra={'id': teletaskid})
             conn.commit()
 
          
@@ -218,10 +267,9 @@ def add_lecture_data(lecture_data):
         )
 
         conn.commit()
-        print(f"Successfully added lecture data for Teletask ID {teletaskid}.")
 
     except (psycopg2.Error) as error:
-        print("Error while connecting to PostgreSQL", error)
+        logger.error("Error while connecting to PostgreSQL", error)
     finally:
         if conn:
             cur.close()
@@ -246,11 +294,11 @@ def get_language_of_lecture(teletaskid) -> str:
         if row:
             return row[0]
         else:
-            print(f"No lecture data found for Teletask ID: {teletaskid}")
+            logger.info(f"No lecture data found for Teletask ID: {teletaskid}")
             return None
 
     except (Exception, psycopg2.Error) as error:
-        print("Error while querying PostgreSQL", error)
+        logger.error("Error while querying PostgreSQL", error)
         return None
     finally:
         if conn:
@@ -266,7 +314,6 @@ def add_api_key(api_key, person_name, person_email):
         )
         cur = conn.cursor()
 
-        print(f"Adding API key for {person_name} ({person_email})")
 
         cur.execute(
             "INSERT INTO api_keys (api_key, person_name, person_email) VALUES (%s, %s, %s) ON CONFLICT (api_key) DO NOTHING;",
@@ -274,15 +321,51 @@ def add_api_key(api_key, person_name, person_email):
         )
 
         conn.commit()
-        print(f"Successfully added API key for {person_name}.")
 
     except (Exception, psycopg2.Error) as error:
-        print("Error while connecting to PostgreSQL", error)
+        logger.error("Error while connecting to PostgreSQL", error)
     finally:
         if conn:
             cur.close()
             conn.close()
 
+
+def get_api_key_by_key(api_key):
+    conn = None
+    try:
+        # --- Connect to PostgreSQL ---
+        conn = psycopg2.connect(
+            dbname=DB_NAME, user=DB_USER, password=DB_PASS, host=DB_HOST, port=DB_PORT
+        )
+        cur = conn.cursor()
+
+        # --- Query record ---
+        cur.execute(
+            "SELECT api_key, person_name, person_email, creation_date, expiration_date, status FROM api_keys WHERE api_key = %s;",
+            (api_key,),
+        )
+        row = cur.fetchone()
+
+        if row:
+            return {
+                "api_key": row[0],
+                "person_name": row[1],
+                "person_email": row[2],
+                "creation_date": row[3],
+                "expiration_date": row[4],
+                "status": row[5]
+            }
+        else:
+            logger.info(f"No API key found: {api_key}")
+            return None
+
+    except (Exception, psycopg2.Error) as error:
+        logger.error("Error while querying PostgreSQL", error)
+        return None
+    finally:
+        if conn:
+            cur.close()
+            conn.close()
 
 def get_api_key_by_name(person_name):
     conn = None
@@ -313,11 +396,11 @@ def get_api_key_by_name(person_name):
         if api_key_info:
             return api_key_info
         else:
-            print(f"No API key found for person name: {person_name}")
+            logger.info(f"No API key found for person name: {person_name}")
             return None
 
     except (Exception, psycopg2.Error) as error:
-        print("Error while querying PostgreSQL", error)
+        logger.error("Error while querying PostgreSQL", error)
         return None
     finally:
         if conn:
@@ -352,7 +435,7 @@ def get_all_api_keys():
         return api_keys
 
     except (Exception, psycopg2.Error) as error:
-        print("Error while querying PostgreSQL", error)
+        logger.error("Error while querying PostgreSQL", error)
         return []
     finally:
         if conn:
@@ -368,23 +451,21 @@ def remove_api_key(api_key):
         )
         cur = conn.cursor()
 
-        print(f"Removing API key: {api_key}")
-
         cur.execute(
             "DELETE FROM api_keys WHERE api_key = %s;",
             (api_key,)
         )
         conn.commit()
-        print(f"Successfully removed API key: {api_key}")
-
+        logger.info(f"Successfully removed API key: {api_key}")
     except (Exception, psycopg2.Error) as error:
-        print("Error while connecting to PostgreSQL", error)
+        logger.error("Error while connecting to PostgreSQL", error)
     finally:
         if conn:
             cur.close()
             conn.close()
 
 def clearDatabase():
+    conn = None
     try:
         # --- Connect to PostgreSQL ---
         conn = psycopg2.connect(
@@ -392,8 +473,6 @@ def clearDatabase():
         )
         conn.autocommit = False
         cur = conn.cursor()
-
-        print("connected")
 
         cur.execute(
             """
@@ -408,7 +487,7 @@ def clearDatabase():
         conn.commit()
 
     except (Exception, psycopg2.Error) as error:
-        print("Error while connecting to PostgreSQL", error)
+        logger.error("Error while connecting to PostgreSQL", error)
     finally:
         if conn:
             cur.close()
@@ -423,18 +502,16 @@ def add_id_to_blacklist(teletaskid, reason):
         )
         cur = conn.cursor()
 
-        print(f"Adding Teletask ID {teletaskid} to blacklist for reason: {reason}")
-
         cur.execute(
             "INSERT INTO blacklist_ids (teletaskid, reason) VALUES (%s, %s) ON CONFLICT (teletaskid) DO UPDATE SET times_tried = blacklist_ids.times_tried + 1, reason = EXCLUDED.reason;",
             (teletaskid, reason),
         )
 
         conn.commit()
-        print(f"Successfully added Teletask ID {teletaskid} to blacklist.")
+        logger.info(f"Successfully added Teletask ID {teletaskid} to blacklist.")
 
     except (Exception, psycopg2.Error) as error:
-        print("Error while connecting to PostgreSQL", error)
+        logger.error("Error while connecting to PostgreSQL", error)
     finally:
         if conn:
             cur.close()
@@ -445,32 +522,17 @@ def save_vtt_as_blob(teletaskid, language, isOriginalLang):
     file_path = os.path.join(input_path, str(teletaskid) + ".vtt")
     file_path_txt = os.path.join(input_path, str(teletaskid) + ".txt")
     if not os.path.exists(file_path):
-        log(
-            f"❌ ID: {teletaskid} ERROR: VTT file not found, cant put in database: {file_path}"
-        )
-        print(
-            f"❌ ID: {teletaskid} ERROR: VTT file not found, cant put in database: {file_path}"
-        )
+        logger.error(f"VTT file not found, cant put in database: {file_path}", extra={'id': teletaskid})
         return -1
     if not os.path.exists(file_path_txt):
-        log(
-            f"❌ ID: {teletaskid} ERROR: TXT file not found, cant put in database: {file_path_txt}"
-        )
-        print(
-            f"❌ ID: {teletaskid} ERROR: TXT file not found, cant put in database: {file_path_txt}"
-        )
+        logger.error(f"TXT file not found, cant put in database: {file_path_txt}", extra={'id': teletaskid})
         return -1
-    print(file_path)
     try:
         # --- Connect to PostgreSQL ---
         conn = psycopg2.connect(
             dbname=DB_NAME, user=DB_USER, password=DB_PASS, host=DB_HOST, port=DB_PORT
         )
         cur = conn.cursor()
-
-        print(f"Teletask ID: {teletaskid}")
-        print(f"Language: {language}")
-        print(f"Is Original Language: {isOriginalLang}")
 
         # --- Read file in binary mode and insert ---
         with open(file_path, "rb") as f:
@@ -493,10 +555,10 @@ def save_vtt_as_blob(teletaskid, language, isOriginalLang):
         )
 
         conn.commit()
-        print(f"Successfully saved '{file_path}' as BLOB.\n------------")
+        logger.info(f"Successfully saved '{file_path}' as BLOB", extra={'id': teletaskid})
 
     except (Exception, psycopg2.Error) as error:
-        print("Error while connecting to PostgreSQL", error)
+        logger.error("Error while connecting to PostgreSQL", error)
     finally:
         if conn:
             cur.close()
@@ -515,11 +577,11 @@ def getHighestTeletaskID():
         # --- Query all records ---
         cur.execute("SELECT MAX(teletaskid) FROM vtt_files;")
         max_id = cur.fetchone()[0]
-        print(f"Highest Teletask ID in available in database: {max_id}")
+        logger.info(f"Highest Teletask ID in available in database: {max_id}")
         return max_id
 
     except (Exception, psycopg2.Error) as error:
-        print("Error while querying PostgreSQL", error)
+        logger.error("Error while querying PostgreSQL", error)
     finally:
         if conn:
             cur.close()
@@ -537,11 +599,11 @@ def getSmallestTeletaskID():
         # --- Query all records ---
         cur.execute("SELECT MIN(teletaskid) FROM vtt_files;")
         max_id = cur.fetchone()[0]
-        print(f"Smallest Teletask ID in available in database: {max_id}")
+        logger.info(f"Smallest Teletask ID in available in database: {max_id}")
         return max_id
 
     except (Exception, psycopg2.Error) as error:
-        print("Error while querying PostgreSQL", error)
+        logger.error("Error while querying PostgreSQL", error)
     finally:
         if conn:
             cur.close()
@@ -579,12 +641,11 @@ def get_missing_inbetween_ids():
         """)
         rows = cur.fetchall()
         ids = [row[0] for row in rows]  # extract the first element from each tuple
-        # print(ids)
         return ids
 
 
     except (Exception, psycopg2.Error) as error:
-        print("Error while querying PostgreSQL", error)
+        logger.error("Error while querying PostgreSQL", error)
     finally:
         if conn:
             cur.close()
@@ -603,11 +664,10 @@ def get_blacklisted_ids(): # TODO
           cur.execute("SELECT teletaskid FROM blacklist_ids;")
           rows = cur.fetchall()
           ids = [row[0] for row in rows]  # extract the first element from each tuple
-          # print(ids)
           return ids
     
      except (Exception, psycopg2.Error) as error:
-          print("Error while querying PostgreSQL", error)
+          logger.error("Error while querying PostgreSQL", error)
           return []
      finally:
           if conn:
@@ -616,10 +676,8 @@ def get_blacklisted_ids(): # TODO
     
 def get_missing_available_inbetween_ids():
     initial_ids = get_missing_inbetween_ids()
-    # print(initial_ids)
     blacklisted_ids = get_blacklisted_ids()
-    # print(blacklisted_ids)
-    print(list(set(initial_ids) - set(blacklisted_ids)))
+    logger.debug(list(set(initial_ids) - set(blacklisted_ids)))
     return list(set(initial_ids) - set(blacklisted_ids))
 
 
@@ -641,11 +699,8 @@ def get_missing_translations():
         """)
         rows = cur.fetchall()
         id_lang_pairs = [(row[0],row[1]) for row in rows]  # extract the first element from each tuple
-        # print(id_lang_pairs)
-
-
     except (Exception, psycopg2.Error) as error:
-        print("Error while querying PostgreSQL", error)
+        logger.error("Error while querying PostgreSQL", error)
     finally:
         if conn:
             cur.close()
@@ -665,9 +720,9 @@ def get_all_vtt_blobs():
             "SELECT id, teletaskid, language,isOriginalLang, vtt_data, txt_data, compute_type FROM vtt_files ORDER BY id;"
         )
         rows = cur.fetchall()
+        logger.info(f"Retrieved {len(rows)} VTT file(s) from database.")
 
-        print(f"\n=== Found {len(rows)} VTT file(s) in database ===\n")
-
+        """ FOR DEBUGGING PURPOSES ONLY
         for row in rows:
             record_id, teletaskid, language, isOriginalLang, vtt_data, txt_data, compute_type = (
                 row
@@ -694,7 +749,7 @@ def get_all_vtt_blobs():
                 print("(Binary data could not be decoded as UTF-8)")
             print("-" * 50)
             print()
-
+            """
         return rows
 
     except (Exception, psycopg2.Error) as error:
@@ -723,7 +778,7 @@ def original_language_exists(teletaskid):
         return count > 0
 
     except (Exception, psycopg2.Error) as error:
-        print("Error while querying PostgreSQL", error)
+        logger.error("Error while querying PostgreSQL", error)
         return False
     finally:
         if conn:
@@ -743,11 +798,12 @@ def databaseTestScript():
 
 
 if __name__ == "__main__":
-    clearDatabase()
+    #clearDatabase()
     initDatabase()
     #print(get_language_of_lecture(11516))
     #save_vtt_as_blob(11408, "de", True)
-    #save_vtt_as_blob(11408, "en", False)
+    #save_vtt_as_blob(11406, "de", True)
+    #save_vtt_as_blob(11405, "de", True)
     #save_vtt_as_blob(11402, "de", True)
     #save_vtt_as_blob(11402, "en", False)
     #add_id_to_blacklist(11406, "404")

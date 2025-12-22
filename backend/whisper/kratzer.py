@@ -225,7 +225,8 @@ def transcribePipelineVideoByID(id):
             logger.error(f"Could not save VTT to database {e}.", extra={'id': id})
             return -1
 
-        logger.info(f"ID: {id} Transcription and saving completed successfully.")
+        logger.info(f"ID: {id} Transcription and saving completed successfully, removing source files.")
+        remove_all_id_files(id)
         return 0
 
 
@@ -317,6 +318,22 @@ def getLecturerData(id, response, url):
         logger.error("Div not found to scrape lecture data.", extra={'id': id})
         return 
     
+
+def remove_all_id_files(id):
+    vtt_path = os.path.join(baseoutput, str(id) + ".vtt")
+    txt_path = os.path.join(baseoutput, str(id) + ".txt")
+    mp3_path = os.path.join(baseinput, str(id) + ".mp3")
+    mp4_path = os.path.join(baseinput, str(id) + ".mp4")
+    
+    for file_path in [vtt_path, txt_path, mp3_path, mp4_path]:
+        if os.path.exists(file_path):
+            try:
+                os.remove(file_path)
+                logger.info(f"Removed file: {file_path}")
+            except Exception as e:
+                logger.error(f"Error removing file {file_path}: {e}")
+        else:
+            logger.debug(f"File not found, cannot remove: {file_path}")
 
 if __name__ == '__main__':
     pingVideoByID(str(2110))

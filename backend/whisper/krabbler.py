@@ -148,6 +148,22 @@ def get_upper_ids():
             unreachable_ids.append(res)
     return ids
     
+def remove_all_id_files(id):
+    vtt_path = os.path.join(baseoutput, str(id) + ".vtt")
+    txt_path = os.path.join(baseoutput, str(id) + ".txt")
+    mp3_path = os.path.join(baseinput, str(id) + ".mp3")
+    mp4_path = os.path.join(baseinput, str(id) + ".mp4")
+    
+    for file_path in [vtt_path, txt_path, mp3_path, mp4_path]:
+        if os.path.exists(file_path):
+            try:
+                os.remove(file_path)
+                print(f"Removed file: {file_path}")
+            except Exception as e:
+                print(f"Error removing file {file_path}: {e}")
+        else:
+            print(f"File not found, cannot remove: {file_path}")
+
 def downloadMP4(url, id):
     print(f"Downloading: {url}")
     try:
@@ -230,7 +246,8 @@ def transcribePipelineVideoByID(id):
             log(f"❌ ID: {id} ERROR: Could not save VTT to database.")
             return -1
         
-        log(f"✅ ID: {id} Transcription and saving completed successfully.")
+        log(f"✅ ID: {id} Transcription and saving completed successfully, removing the source files.")
+        remove_all_id_files(id)
         return 0
 
 
@@ -349,4 +366,5 @@ if __name__ == '__main__':
     #transcribePipelineVideoByID(str(testid))
     #transcribePipelineVideoByID(str(11519))
     #getLecturerData(str(11516))
-    fetchLecture(str(11519))
+    #fetchLecture(str(11519))
+    remove_all_id_files(str(1))

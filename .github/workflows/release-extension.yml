@@ -12,7 +12,7 @@ on:
         type: string
         required: true
       make_latest:
-        description: "Whether this release should be set as latest (not possible for drafts and prereleases)"
+        description: "Set this release as latest? (Not possible for drafts and prereleases)"
         type: choice
         options:
           - 'true'
@@ -21,12 +21,12 @@ on:
         required: false
         default: 'true'
       draft:
-        description: "Whether or not this release is a draft"
+        description: "Draft release?"
         type: boolean
         required: false
         default: false
       prerelease:
-        description: "Whether or not is a prerelease"
+        description: "Prerelease?"
         type: boolean
         required: false
         default: false
@@ -63,7 +63,7 @@ jobs:
       - name: Lint extension
         run: |
           web-ext lint \
-            --source-dir "." \
+            --source-dir "${{ github.event.inputs.extension_dir }}" \
             --ignore-files=lint-output.json \
             --self-hosted true \
             --output json > lint-output.json || true

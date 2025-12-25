@@ -3,7 +3,7 @@
   --ttyellow: #f7a600;
   --ttorange: #de6106;
   --ttred: #b00835;
-  --muted: #bdcadb;
+  --muted: rgba(212, 220, 229, 0.9);
   --success: #77b379;
   --error: #f6a09a;
   --glass: rgba(255,255,255,0.04);
@@ -183,7 +183,9 @@ input, label {
   border-top: 1px solid rgba(255,255,255,0.07);
   padding-top: 5px;
 }
-.card-footer small {color: rgba(212, 220, 229, 0.7)}
+.card-footer small {color: var(--muted)}
+#version{margin-top: 0.3rem}
+#version > a {color: var(--muted)}
 
 .visually-hidden {
   position: absolute !important;

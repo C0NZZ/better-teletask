@@ -1,5 +1,11 @@
 document.addEventListener('DOMContentLoaded', async () => {
   {
+    const versiontext = document.getElementById('version').querySelector('a');
+    const version = browser.runtime.getManifest().version;
+    versiontext.setAttribute('href',`https://github.com/C0NZZ/better-teletask/releases/tag/v${version}`);
+    versiontext.textContent = "v" + version;
+  }
+  {
     const input = document.getElementById('apikeyInput');
     const statusDiv = document.getElementById('apikeyStatus');
     const statusText = document.getElementById('apikeyStatusText');

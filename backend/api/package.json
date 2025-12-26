@@ -2,9 +2,11 @@
   "name": "api",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "type": "module",
+  "main": "dist/index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build": "tsc",
+    "start": "node dist/index.js"
   },
   "keywords": [],
   "author": "",
@@ -13,5 +15,10 @@
     "dotenv": "^17.2.3",
     "fastify": "^5.6.1",
     "pg": "^8.16.3"
+  },
+  "devDependencies": {
+    "@types/node": "^22.7.4",
+    "@types/pg": "^8.11.10",
+    "typescript": "^5.6.3"
   }
 }

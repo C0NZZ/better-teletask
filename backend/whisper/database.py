@@ -38,7 +38,6 @@ def initDatabase():
         cur = conn.cursor()
         logger.info("Initialized database connection.")
         conn.set_isolation_level(extensions.ISOLATION_LEVEL_AUTOCOMMIT)
-        # TODO Rename: teletaskid to teletask_id, originalLang to original_lang, isOriginalLang to is_original_lang
         cur.execute(
             """
             CREATE TABLE IF NOT EXISTS series_data (
@@ -51,8 +50,8 @@ def initDatabase():
                 lecturer_name VARCHAR(255)
             );
             CREATE TABLE IF NOT EXISTS lecture_data (
-                teletaskid INTEGER PRIMARY KEY, 
-                originalLang VARCHAR(50),
+                teletask_id INTEGER PRIMARY KEY, 
+                language VARCHAR(50),
                 date DATE,
                 lecturer_id INTEGER,
                 series_id INTEGER,
@@ -65,9 +64,9 @@ def initDatabase():
             );
             CREATE TABLE IF NOT EXISTS vtt_files (
                 id SERIAL PRIMARY KEY,
-                teletaskid INTEGER NOT NULL,
+                teletask_id INTEGER NOT NULL,
                 language VARCHAR(50) NOT NULL,
-                isOriginalLang BOOLEAN NOT NULL,
+                is_original_lang BOOLEAN NOT NULL,
                 vtt_data BYTEA NOT NULL,
                 txt_data BYTEA NOT NULL,
                 asr_model VARCHAR(255),
@@ -84,13 +83,13 @@ def initDatabase():
                 status VARCHAR(255) DEFAULT 'active'
             );
             CREATE TABLE IF NOT EXISTS blacklist_ids (
-                teletaskid INTEGER PRIMARY KEY,
+                teletask_id INTEGER PRIMARY KEY,
                 reason VARCHAR(255),
                 times_tried INTEGER DEFAULT 1,
                 creation_date TIMESTAMPTZ DEFAULT NOW()
             );
 
-            CREATE INDEX IF NOT EXISTS idx_vtt_files_teletaskid ON vtt_files (teletaskid);
+            CREATE INDEX IF NOT EXISTS idx_vtt_files_teletask_id ON vtt_files (teletask_id);
             CREATE INDEX IF NOT EXISTS idx_api_keys_api_key ON api_keys (api_key);
 
             """)
@@ -112,7 +111,7 @@ def get_all_lecture_ids():
         cur = conn.cursor()
 
         # --- Query all records ---
-        cur.execute("SELECT teletaskid FROM lecture_data;")
+        cur.execute("SELECT teletask_id FROM lecture_data;")
         rows = cur.fetchall()
         ids = [row[0] for row in rows]  # extract the first element from each tuple
         logger.debug(f"Fetched all lecture IDs: {ids}")
@@ -136,7 +135,7 @@ def get_all_original_vtt_ids():
         cur = conn.cursor()
 
         # --- Query all records ---
-        cur.execute("SELECT teletaskid FROM vtt_files WHERE isOriginalLang = TRUE;")
+        cur.execute("SELECT teletask_id FROM vtt_files WHERE is_original_lang = TRUE;")
         rows = cur.fetchall()
         ids = [row[0] for row in rows]  # extract the first element from each tuple
         logger.debug(f"Fetched all original VTT IDs: {ids}")
@@ -252,7 +251,7 @@ def add_lecture_data(lecture_data):
 
          
         cur.execute(
-            "INSERT INTO lecture_data (teletaskid, originalLang, date, lecturer_id, series_id, semester, duration, title, video_mp4) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s);",
+            "INSERT INTO lecture_data (teletask_id, language, date, lecturer_id, series_id, semester, duration, title, video_mp4) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s);",
             (
                 teletaskid,
                 language,
@@ -286,7 +285,7 @@ def get_language_of_lecture(teletaskid) -> str:
 
         # --- Query record ---
         cur.execute(
-            "SELECT originalLang FROM lecture_data WHERE teletaskid = %s;",
+            "SELECT language FROM lecture_data WHERE teletask_id = %s;",
             (teletaskid,),
         )
         row = cur.fetchone()
@@ -503,7 +502,7 @@ def add_id_to_blacklist(teletaskid, reason):
         cur = conn.cursor()
 
         cur.execute(
-            "INSERT INTO blacklist_ids (teletaskid, reason) VALUES (%s, %s) ON CONFLICT (teletaskid) DO UPDATE SET times_tried = blacklist_ids.times_tried + 1, reason = EXCLUDED.reason;",
+            "INSERT INTO blacklist_ids (teletask_id, reason) VALUES (%s, %s) ON CONFLICT (teletask_id) DO UPDATE SET times_tried = blacklist_ids.times_tried + 1, reason = EXCLUDED.reason;",
             (teletaskid, reason),
         )
 
@@ -542,7 +541,7 @@ def save_vtt_as_blob(teletaskid, language, isOriginalLang):
             txt_binary_data = f.read()
 
         cur.execute(
-            "INSERT INTO vtt_files (teletaskid,language,isOriginalLang,vtt_data,txt_data,asr_model,compute_type) VALUES (%s,%s,%s,%s,%s,%s,%s);",
+            "INSERT INTO vtt_files (teletask_id, language, is_original_lang, vtt_data, txt_data, asr_model, compute_type) VALUES (%s,%s,%s,%s,%s,%s,%s);",
             (
                 teletaskid,
                 language,
@@ -575,7 +574,7 @@ def getHighestTeletaskID():
         cur = conn.cursor()
 
         # --- Query all records ---
-        cur.execute("SELECT MAX(teletaskid) FROM vtt_files;")
+        cur.execute("SELECT MAX(teletask_id) FROM vtt_files;")
         max_id = cur.fetchone()[0]
         logger.info(f"Highest Teletask ID in available in database: {max_id}")
         return max_id
@@ -597,7 +596,7 @@ def getSmallestTeletaskID():
         cur = conn.cursor()
 
         # --- Query all records ---
-        cur.execute("SELECT MIN(teletaskid) FROM vtt_files;")
+        cur.execute("SELECT MIN(teletask_id) FROM vtt_files;")
         max_id = cur.fetchone()[0]
         logger.info(f"Smallest Teletask ID in available in database: {max_id}")
         return max_id
@@ -622,22 +621,22 @@ def get_missing_inbetween_ids():
         cur.execute(""" 
             WITH bounds AS (
             SELECT 
-                MIN(teletaskid) AS min_id,
-                MAX(teletaskid) AS max_id
+                MIN(teletask_id) AS min_id,
+                MAX(teletask_id) AS max_id
             FROM vtt_files
             ),
             all_ids AS (
                 SELECT generate_series(
                     (SELECT min_id FROM bounds),
                     (SELECT max_id FROM bounds)
-                ) AS teletaskid
+                ) AS teletask_id
             )
-            SELECT all_ids.teletaskid
+            SELECT all_ids.teletask_id
             FROM all_ids
             LEFT JOIN vtt_files vf 
-                ON all_ids.teletaskid = vf.teletaskid
-            WHERE vf.teletaskid IS NULL
-            ORDER BY all_ids.teletaskid;
+                ON all_ids.teletask_id = vf.teletask_id
+            WHERE vf.teletask_id IS NULL
+            ORDER BY all_ids.teletask_id;
         """)
         rows = cur.fetchall()
         ids = [row[0] for row in rows]  # extract the first element from each tuple
@@ -661,7 +660,7 @@ def get_blacklisted_ids(): # TODO
           cur = conn.cursor()
     
           # --- Query all records ---
-          cur.execute("SELECT teletaskid FROM blacklist_ids;")
+          cur.execute("SELECT teletask_id FROM blacklist_ids;")
           rows = cur.fetchall()
           ids = [row[0] for row in rows]  # extract the first element from each tuple
           return ids
@@ -692,10 +691,10 @@ def get_missing_translations():
 
         # --- Query all records ---
         cur.execute(""" 
-            WITH all_ids AS( SELECT DISTINCT teletaskid FROM vtt_files )
-            SELECT teletaskid, language FROM vtt_files
-            WHERE isOriginalLang = False
-            ORDER BY teletaskid DESC;
+            WITH all_ids AS( SELECT DISTINCT teletask_id FROM vtt_files )
+            SELECT teletask_id, language FROM vtt_files
+            WHERE is_original_lang = False
+            ORDER BY teletask_id DESC;
         """)
         rows = cur.fetchall()
         id_lang_pairs = [(row[0],row[1]) for row in rows]  # extract the first element from each tuple
@@ -717,18 +716,18 @@ def get_all_vtt_blobs():
 
         # --- Query all records ---
         cur.execute(
-            "SELECT id, teletaskid, language,isOriginalLang, vtt_data, txt_data, compute_type FROM vtt_files ORDER BY id;"
+            "SELECT id, teletask_id, language, is_original_lang, vtt_data, txt_data, compute_type FROM vtt_files ORDER BY id;"
         )
         rows = cur.fetchall()
         logger.info(f"Retrieved {len(rows)} VTT file(s) from database.")
 
         """ FOR DEBUGGING PURPOSES ONLY
         for row in rows:
-            record_id, teletaskid, language, isOriginalLang, vtt_data, txt_data, compute_type = (
+            record_id, teletask_id, language, is_original_lang, vtt_data, txt_data, compute_type = (
                 row
             )
             print(f"--- Record ID: {record_id} ---")
-            print(f"Teletask ID: {teletaskid}")
+            print(f"Teletask ID: {teletask_id}")
             print(f"Language: {language}")
             print(f"Is Original Language: {isOriginalLang}")
             print(f"VTT Data (size): {len(vtt_data)} bytes")
@@ -771,7 +770,7 @@ def original_language_exists(teletaskid):
 
         # --- Query all records ---
         cur.execute(
-            "SELECT COUNT(*) FROM vtt_files WHERE teletaskid = %s AND isOriginalLang = TRUE;",
+            "SELECT COUNT(*) FROM vtt_files WHERE teletask_id = %s AND is_original_lang = TRUE;",
             (teletaskid,),
         )
         count = cur.fetchone()[0]

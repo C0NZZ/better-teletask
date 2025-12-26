@@ -67,12 +67,12 @@ async function getVttFile(teletaskId, language) {
   let result;
   if (!language) {
     result = await query(
-      'SELECT id, teletaskid, language, isOriginalLang, vtt_data FROM vtt_files WHERE teletaskid = $1 AND isOriginalLang = True ORDER BY language LIMIT 1',
+      'SELECT id, teletask_id, language, is_original_lang, vtt_data FROM vtt_files WHERE teletask_id = $1 AND is_original_lang = True ORDER BY language LIMIT 1',
       [teletaskId]
     );
   } else {
     result = await query(
-      'SELECT id, teletaskid, language, vtt_data FROM vtt_files WHERE teletaskid = $1 AND language = $2',
+      'SELECT id, teletask_id, language, vtt_data FROM vtt_files WHERE teletask_id = $1 AND language = $2',
       [teletaskId, language]
     );
   }

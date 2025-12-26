@@ -75,7 +75,10 @@ async function verifyAuthHeader(request: FastifyRequest<{ Params: SubRouteParams
   }
 }
 
-server.get<{ Params: SubRouteParams }>('/sub/:id/:language', { preHandler: verifyAuthHeader }, async (request, reply) => {
+server.get<{ Params: SubRouteParams }>('/sub/:id/:language', { preHandler: verifyAuthHeader }, async (
+  request: FastifyRequest<{ Params: SubRouteParams }, RawServerDefault>,
+  reply: FastifyReply
+) => {
   const { id, language } = request.params;
 
   const teletaskId = parseInt(id, 10);

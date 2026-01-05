@@ -1,55 +1,50 @@
+import logging
 import os
-import threading
-from datetime import datetime
+from dotenv import load_dotenv, find_dotenv
 
-_lock = threading.Lock()
+load_dotenv(find_dotenv())
+
+# get corresponding logging level from environment variable and match it to logging module levels from logging
+LEVEL_NAME = os.getenv("LOGGING", "INFO").strip().upper()
+LEVEL_NAME = getattr(logging, LEVEL_NAME, logging.INFO)
+print(f"Logger level set to: {logging.getLevelName(LEVEL_NAME)}, if you see too many or too few messages, adjust the LOGGING variable in the .env file.")
+
+# Ensure the logs directory exists
+LOG_FILE_PATH = "logs/whisper.log"
+os.makedirs(os.path.dirname(LOG_FILE_PATH), exist_ok=True)
+
+# Implement own Self Formatter for id field
+class SafeFormatter(logging.Formatter):
+
+    def format(self, record):
+        # If there is no string, assume its a global log
+        if not hasattr(record, 'id'):
+            record.id = "GLOBAL" 
+        else:
+            record.id = str(record.id)      
+        return super().format(record)
+
+String_Format = '[%(asctime)s %(levelname)s] [%(id)s] %(message)s'
+
+formatter = SafeFormatter(
+    String_Format,
+    datefmt='%Y-%m-%d %H:%M:%S'
+)
+
+root_logger = logging.getLogger("btt_root_logger")
+root_logger.setLevel(logging.DEBUG) # This must let everything pass
+root_logger.propagate = False  # Prevent duplicate logging to Python's root logger
 
 
-def _format_line(msg: str) -> str:
-    """Return a single log line prefixed with a local ISO timestamp.
+file_handler = logging.FileHandler(LOG_FILE_PATH, mode='a', encoding='utf-8')
+file_handler.setLevel(logging.INFO) # Everything to file, could have multiple file handlers with different levels
+file_handler.setFormatter(formatter)
+root_logger.addHandler(file_handler)
 
-    Kept at module scope so multiple logging functions reuse the same
-    formatting logic and it's easy to change in one place.
-    """
-    ts = datetime.now().isoformat(sep=' ', timespec='seconds')
-    return f"[{ts} {datetime.now().astimezone().strftime('%Z')}] {msg.rstrip()}\n"
+stream_handler = logging.StreamHandler()
+stream_handler.setLevel(LEVEL_NAME) # Set its specific filter to WARNING
+stream_handler.setFormatter(formatter)
+root_logger.addHandler(stream_handler)
 
-def log(message: str) -> None:
-    """
-    Append `message` as a new line to ./logs/log.txt (relative to the current working directory).
-    Creates the logs directory if it doesn't exist. Thread-safe.
-    """
-    logs_dir = os.path.join(os.getcwd(), "logs")
-    os.makedirs(logs_dir, exist_ok=True)
-    log_path = os.path.join(logs_dir, "log.txt")
-
-    # Ensure a single writer at a time
-    with _lock:
-        with open(log_path, "a", encoding="utf-8") as f:
-            f.write(_format_line(message))
-            f.flush()
-            try:
-                os.fsync(f.fileno())
-            except Exception:
-                # fsync may fail on some platforms; ignore to keep logging robust
-                pass
-
-def logAborts(message: str) -> None:
-    """
-    Append `message` as a new line to ./logs/log.txt (relative to the current working directory).
-    Creates the logs directory if it doesn't exist. Thread-safe.
-    """
-    logs_dir = os.path.join(os.getcwd(), "logs")
-    os.makedirs(logs_dir, exist_ok=True)
-    log_path = os.path.join(logs_dir, "aborts.txt")
-
-    # Ensure a single writer at a time
-    with _lock:
-        with open(log_path, "a", encoding="utf-8") as f:
-            f.write(_format_line(message))
-            f.flush()
-            try:
-                os.fsync(f.fileno())
-            except Exception:
-                # fsync may fail on some platforms; ignore to keep logging robust
-                pass
+logger = logging.getLogger("btt_root_logger")
+logger.info("Logger initialized.")

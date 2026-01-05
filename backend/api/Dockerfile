@@ -1,11 +1,13 @@
-FROM node:22
+FROM node:24
 
 WORKDIR /node
 
-COPY package-lock.json package.json ./
+COPY package-lock.json package.json tsconfig.json ./
 
-RUN npm install
+RUN npm ci
 
-COPY database.js index.js ./
+COPY database.ts index.ts ./
 
-CMD [ "index.js" ]
+RUN npm run build
+
+CMD [ "node", "dist/index.js" ]

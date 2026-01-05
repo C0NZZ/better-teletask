@@ -111,7 +111,6 @@ def pingVideoByID(id) -> str:
     except HTTPError as e:
         logger.error("Error fetching body:", extra={'id': id})
         return ""
-
     if(response.status_code == 200):
         logging.info("Code 200, Video exists", extra={'id': id})
         return "200"
@@ -120,6 +119,8 @@ def pingVideoByID(id) -> str:
         return "404"
     elif(response.status_code == 401):
         logging.info("Code 401, not allowed, please use a session cookie", extra={'id': id})
+        global USERNAME_COOKIE
+        USERNAME_COOKIE = os.environ.get("USERNAME_COOKIE")
         return "401"
     elif(response.status_code == 403): # these can happen randomly
         logging.info("Code 403, access forbidden", extra={'id': id})

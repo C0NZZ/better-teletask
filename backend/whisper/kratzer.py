@@ -82,7 +82,7 @@ def fetchMP4(id, response) -> str:
                 sd_urls = [stream.get("sd") for stream in streams if "sd" in stream]
             
                 for url in sd_urls:
-                    if url.endswith("video.mp4") or url.endswith("CameraMicrophone.mp4"):
+                    if url.endswith("video.mp4") or url.endswith("CameraMicrophone.mp4") or url.endswith("video_complete.mp4"):
                         logger.info(f"Found video.mp4 URL in sd streams: {url}", extra={'id': id})
                         return url
                 for url in sd_urls:

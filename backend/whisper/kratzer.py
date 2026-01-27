@@ -6,19 +6,18 @@ import json
 from tqdm import tqdm
 import ffmpeg
 import os
-from dotenv import load_dotenv, find_dotenv
 from database import get_language_of_lecture, getHighestTeletaskID, save_vtt_as_blob, add_lecture_data
+from config import get_config
 
 # setup logging
 import logger
 import logging
 logger = logging.getLogger("btt_root_logger")
 
-load_dotenv(find_dotenv())
+config = get_config()
 
-OUTPUTFOLDER = os.environ.get("VTT_DEST_FOLDER")
-INPUTFOLDER = os.environ.get("RECORDING_SOURCE_FOLDER")
-USERNAME_COOKIE = os.environ.get("USERNAME_COOKIE")
+OUTPUTFOLDER = config.vtt_dest_folder
+INPUTFOLDER = config.recording_source_folder
 script_dir = os.path.dirname(os.path.abspath(__file__))
 baseinput =  os.path.join(script_dir, INPUTFOLDER)
 baseoutput =  os.path.join(script_dir, OUTPUTFOLDER)
@@ -26,13 +25,13 @@ baseurl = "https://www.tele-task.de/lecture/video/"
 
 logger.debug("output folder: "+OUTPUTFOLDER)
 logger.debug("input folder: "+INPUTFOLDER)
-logger.debug("username cookie: "+USERNAME_COOKIE)
 logger.debug("base input folder: "+baseinput)
 logger.debug("base output folder: "+baseoutput)
 
 
 def fetchBody(id) -> Response:
-    cookies = {"username": USERNAME_COOKIE}
+    # Get fresh cookie each time (hot-reload support)
+    cookies = {"username": config.username_cookie}
     url = baseurl + id
     logger.info("requesting "+url, extra={'id': id})
     response = requests.get(url, cookies=cookies, verify='chain.pem')

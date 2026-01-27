@@ -8,22 +8,23 @@ logger.propagate = False
 import whisperx
 import os
 from whisperx.utils import get_writer
-from dotenv import load_dotenv, find_dotenv
 from database import get_language_of_lecture
+from config import get_config
 
-
-load_dotenv(find_dotenv())
-MODEL = os.environ.get("ASR_MODEL")
-COMPUTE_TYPE = os.environ.get("COMPUTE_TYPE")
+config = get_config()
+MODEL = config.asr_model
+COMPUTE_TYPE = config.compute_type
 
 # Get path relative to this script file, not execution location
 script_dir = os.path.dirname(os.path.abspath(__file__))
 input_path = os.path.join(script_dir, "input/")
 output_path = os.path.join(script_dir, "output/")
 compute_type = COMPUTE_TYPE
-device = "cuda"
+device = "cpu"
 
 model = whisperx.load_model(MODEL, device=device, compute_type=compute_type)
+model.options.initial_prompt = "test"
+model.options.hotwords = "education lecture university student professor academic"
 
 def transcribeVideoByID(id) -> str: 
     file_path = os.path.join(input_path, id + ".mp3")
@@ -46,7 +47,7 @@ def transcribeVideoByID(id) -> str:
 
     audio = whisperx.load_audio(file_path)
 
-    result = model.transcribe(audio, batch_size=4, language=language)
+    result = model.transcribe(audio, batch_size=4, language=language, task = "translate")
     logger.debug(f"Transcription result segments: {result['segments']}", extra={'id': id})
 
     # Save the language before alignment

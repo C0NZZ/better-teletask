@@ -5,3 +5,5 @@ beautifulsoup4
 ffmpeg-python
 uvicorn
 fastapi
+Pillow
+imagehash

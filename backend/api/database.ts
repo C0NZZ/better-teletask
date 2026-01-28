@@ -59,7 +59,7 @@ async function getClient(): Promise<PoolClient> {
 
 export type VttFileRow = {
   id: number;
-  teletask_id: number;
+  lecture_id: number;
   language: string;
   vtt_data: Buffer;
   is_original_lang?: boolean;
@@ -75,12 +75,12 @@ async function getVttFile(teletaskId: number, language?: string): Promise<VttFil
   let result: QueryResult<VttFileRow>;
   if (!language) {
     result = await query<VttFileRow>(
-      'SELECT id, teletask_id, language, is_original_lang, vtt_data FROM vtt_files WHERE teletask_id = $1 AND is_original_lang = True ORDER BY language LIMIT 1',
+      'SELECT id, lecture_id, language, is_original_lang, vtt_data FROM vtt_files WHERE lecture_id = $1 AND is_original_lang = True ORDER BY language LIMIT 1',
       [teletaskId]
     );
   } else {
     result = await query<VttFileRow>(
-      'SELECT id, teletask_id, language, vtt_data FROM vtt_files WHERE teletask_id = $1 AND language = $2',
+      'SELECT id, lecture_id, language, vtt_data FROM vtt_files WHERE lecture_id = $1 AND language = $2',
       [teletaskId, language]
     );
   }

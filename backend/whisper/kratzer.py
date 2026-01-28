@@ -283,11 +283,18 @@ def getLecturerData(id, response, url):
                 series_id = m.group(1) if m else None
 
         lect_a = lecture_info_div.find("a", href=re.compile(r"^/lecturer/"))
-        if lect_a:
-            lecturer_name = lect_a.get_text(strip=True)
-            m = re.search(r"/lecturer/(\d+)", lect_a["href"])
-            lecturer_id = m.group(1) if m else None
 
+        lectures = lecture_info_div.find_all("a", href=re.compile(r"^/lecturer/"))
+        lecturer_names = []
+        lecturer_ids = []
+        for lect in lectures:
+            lecturer_names.append(lect.get_text(strip=True))
+            m = re.search(r"/lecturer/(\d+)", lect["href"])
+            lecturer_ids.append(m.group(1) if m else None)
+        print("lecturer_names:", lecturer_names)
+        print("lecturer_ids:", lecturer_ids)
+        print("lectures:", lectures)
+        
         inner = lecture_info_div.decode_contents()
 
         def find_field(label):
@@ -300,9 +307,9 @@ def getLecturerData(id, response, url):
         duration = find_field("Duration")
 
         lecture_data = {
-            "teletask_id": id,
-            "lecturer_id": lecturer_id,
-            "lecturer_name": lecturer_name,
+            "lecture_id": id,
+            "lecturer_ids": lecturer_ids,
+            "lecturer_names": lecturer_names,
             "date": date,
             "language": language,
             "duration": duration,
@@ -337,11 +344,7 @@ def remove_all_id_files(id):
             logger.debug(f"File not found, cannot remove: {file_path}")
 
 if __name__ == '__main__':
-    pingVideoByID(str(2110))
-    pingVideoByID(str(2111))
-    pingVideoByID(str(2112))
-
-    url = transcribePipelineVideoByID(str(2112))
+    url = transcribePipelineVideoByID(str(11682))
     #transcribePipelineVideoByID(str(testid))
     #transcribePipelineVideoByID(str(11519))
     #getLecturerData(str(11516))

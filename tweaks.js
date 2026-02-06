@@ -73,12 +73,7 @@ export function subtitleDragHandler(featureSettings, player) {
     draggingSubs = true;
     const rect = subbox.getBoundingClientRect();
     offsetX = e.clientX - rect.left;
-    offsetY = e.clientY - rect.top;
-    if (subbox.style.getPropertyValue('bottom') != "initial") {
-      const parentRect = player.shadowRoot.getElementById('video-player-container').getBoundingClientRect();
-      subbox.style.top = (rect.top - parentRect.top) + "px";
-      subbox.style.bottom = "initial";
-    }
+    offsetY = rect.bottom - e.clientY;
   };
 
   const onMouseUp = () => {
@@ -89,9 +84,9 @@ export function subtitleDragHandler(featureSettings, player) {
 
   const onMouseMove = (e) => {
     if (draggingSubs) {
-      const parentRect = player.shadowRoot.getElementById('video-player-container').getBoundingClientRect();
+      const parentRect = subbox.offsetParent.getBoundingClientRect();
       subbox.style.left = (e.clientX - parentRect.left - offsetX) + "px";
-      subbox.style.top  = (e.clientY - parentRect.top  - offsetY) + "px";
+      subbox.style.bottom = (parentRect.bottom - e.clientY - offsetY) + "px";
     }
   };
 

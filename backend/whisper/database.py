@@ -226,20 +226,22 @@ def add_lecture_data(lecture_data):
         else:
             semester = f"ST {date.year}"
 
+        for lecturer_id in lecturer_ids:
+            if not lecturer_id_exists(lecturer_id):
+                cur.execute(
+                    "INSERT INTO lecturer_data (lecturer_id, lecturer_name) VALUES (%s, %s) ON CONFLICT (lecturer_id) DO NOTHING;",
+                    (
+                        lecturer_id,
+                        lecturer_names[lecturer_ids.index(lecturer_id)]
+                    ),
+                )
+                logger.info(f"Added lecturer data for Lecturer ID {lecturer_id}.", extra={'id': teletaskid})
+                conn.commit()
+
         
-        if not lecturer_id_exists(lecturer_id):
-            cur.execute(
-                "INSERT INTO lecturer_data (lecturer_ids, lecturer_names) VALUES (%s, %s) ON CONFLICT (lecturer_id) DO NOTHING;",
-                (
-                    lecturer_ids,
-                    lecturer_names
-                ),
-            )
-            logger.info(f"Added lecturer data for Lecturer ID {lecturer_id}.", extra={'id': teletaskid})
-            conn.commit()
         if not series_id_exists(series_id):
             cur.execute(
-                "INSERT INTO series_data (series_id, series_name, lecturer_ids) VALUES (%s, %s, %s) ON CONFLICT (series_id) DO NOTHING;",
+                "INSERT INTO series_data (series_id, series_name, lecturer_ids) VALUES (%s, %s, %s::INTEGER[]) ON CONFLICT (series_id) DO NOTHING;",
                 (
                     series_id,
                     series_name,
@@ -249,11 +251,20 @@ def add_lecture_data(lecture_data):
             logger.info(f"Added series data for Series ID {series_id}.", extra={'id': teletaskid})
             conn.commit()
         else:
-            cur.execute
+            cur.execute(
+                "UPDATE series_data SET lecturer_ids = array(SELECT DISTINCT unnest(lecturer_ids || CAST(%s AS INTEGER[]))) WHERE series_id = %s;",
+                (
+                    lecturer_ids,
+                    series_id
+                ),
+            )
+            logger.info(f"Updated lecturer IDs for Series ID {series_id}.", extra={'id': teletaskid})
+            conn.commit()
+                
 
-         
+        print("1")
         cur.execute(
-            "INSERT INTO lecture_data (lecture_id, language, date, lecturer_ids, series_ids, semester, duration, title, video_mp4) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s);",
+            "INSERT INTO lecture_data (lecture_id, language, date, lecturer_ids, series_id, semester, duration, title, video_mp4) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s);",
             (
                 teletaskid,
                 language,
@@ -266,6 +277,7 @@ def add_lecture_data(lecture_data):
                 url
             ),
         )
+        print("2")
 
         conn.commit()
 

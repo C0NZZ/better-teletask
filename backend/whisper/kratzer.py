@@ -198,6 +198,7 @@ def transcribePipelineVideoByID(id):
     from whisper import transcribeVideoByID
 
     url = fetchLecture(str(id))
+    return
     if url == "":
         logging.error("No mp4 URL found, cannot transcribe", extra={'id': id})
         return -1
@@ -280,7 +281,7 @@ def getLecturerData(id, response, url):
             if a:
                 series_name = a.get_text(strip=True)
                 m = re.search(r"/series/(\d+)", a["href"])
-                series_id = m.group(1) if m else None
+                series_id = int(m.group(1)) if m else None
 
         lect_a = lecture_info_div.find("a", href=re.compile(r"^/lecturer/"))
 
@@ -290,7 +291,7 @@ def getLecturerData(id, response, url):
         for lect in lectures:
             lecturer_names.append(lect.get_text(strip=True))
             m = re.search(r"/lecturer/(\d+)", lect["href"])
-            lecturer_ids.append(m.group(1) if m else None)
+            lecturer_ids.append(int(m.group(1)) if m else None)
         print("lecturer_names:", lecturer_names)
         print("lecturer_ids:", lecturer_ids)
         print("lectures:", lectures)
@@ -344,7 +345,9 @@ def remove_all_id_files(id):
             logger.debug(f"File not found, cannot remove: {file_path}")
 
 if __name__ == '__main__':
-    url = transcribePipelineVideoByID(str(11682))
+    transcribePipelineVideoByID(str(11469))
+    transcribePipelineVideoByID(str(11682))
+
     #transcribePipelineVideoByID(str(testid))
     #transcribePipelineVideoByID(str(11519))
     #getLecturerData(str(11516))

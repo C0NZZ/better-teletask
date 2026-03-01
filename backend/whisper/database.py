@@ -771,6 +771,68 @@ def get_all_vtt_blobs():
             cur.close()
             conn.close()
 
+def get_original_language_by_id(teletaskid):
+    conn = None
+    try:
+        # --- Connect to PostgreSQL ---
+        conn = psycopg2.connect(
+            dbname=DB_NAME, user=DB_USER, password=DB_PASS, host=DB_HOST, port=DB_PORT
+        )
+        cur = conn.cursor()
+
+        # --- Query all records ---
+        cur.execute(
+            "SELECT language FROM vtt_files WHERE teletaskid = %s AND isOriginalLang = TRUE;",
+            (teletaskid,),
+        )
+        row = cur.fetchone()
+        if row:
+            language = row[0]
+            return language
+        else:
+            print(f"No original language found for Teletask ID: {teletaskid}")
+            return None
+    except (Exception, psycopg2.Error) as error:
+        print("Error while querying PostgreSQL", error)
+        return None
+    finally:
+        if conn:
+            cur.close()
+            conn.close()
+
+
+def get_original_vtt_by_id(teletaskid):
+    conn = None
+    try:
+        # --- Connect to PostgreSQL ---
+        conn = psycopg2.connect(
+            dbname=DB_NAME, user=DB_USER, password=DB_PASS, host=DB_HOST, port=DB_PORT
+        )
+        cur = conn.cursor()
+
+        # --- Query all records ---
+        cur.execute(
+            "SELECT vtt_data FROM vtt_files WHERE teletaskid = %s AND isOriginalLang = TRUE;",
+            (teletaskid,),
+        )
+        row = cur.fetchone()
+        if row:
+            vtt_data = row[0]
+            vtt_bytes = bytes(vtt_data)
+            vtt_content = vtt_bytes.decode("utf-8")
+            return vtt_content
+        else:
+            print(f"No original VTT found for Teletask ID: {teletaskid}")
+            return None
+
+    except (Exception, psycopg2.Error) as error:
+        print("Error while querying PostgreSQL", error)
+        return None
+    finally:
+        if conn:
+            cur.close()
+            conn.close()
+
 def original_language_exists(teletaskid):
     conn = None
     try:

@@ -10,4 +10,6 @@ COPY database.ts index.ts ./
 
 RUN npm run build
 
-CMD [ "node", "dist/index.js" ]
+COPY dist/database.js dist/index.js ./
+
+CMD [ "node", "index.js" ]

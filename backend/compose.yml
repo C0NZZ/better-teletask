@@ -8,20 +8,12 @@ services:
       - ./whisper/logs:/whisper/logs
       - "models:/models"
     depends_on:
-      - database
+      database:
+        condition: service_healthy
+    restart: unless-stopped
     gpus: all
     stop_signal: SIGINT
     stop_grace_period: 30s
-
-  database:
-    image: postgres:18-alpine
-    environment:
-      - TZ=${TZ}
-      - PGTZ=${TZ}
-    env_file: ".env"
-    volumes:
-      - "pgdata:/var/lib/postgresql"
-    command: postgres -c timezone=${TZ}
 
   api:
     build: ./api
@@ -33,7 +25,25 @@ services:
     ports:
     - "80:80"
     depends_on:
-      - database
+      database:
+        condition: service_healthy
+    restart: unless-stopped
+
+  database:
+    image: postgres:18-alpine
+    environment:
+      - TZ=${TZ}
+      - PGTZ=${TZ}
+    env_file: ".env"
+    volumes:
+      - "pgdata:/var/lib/postgresql"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready"]
+      interval: 7s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    command: postgres -c timezone=${TZ}
 
 volumes:
   models:

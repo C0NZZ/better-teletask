@@ -198,7 +198,7 @@ def transcribePipelineVideoByID(id):
     from whisper import transcribeVideoByID
 
     url = fetchLecture(str(id))
-    return
+    
     if url == "":
         logging.error("No mp4 URL found, cannot transcribe", extra={'id': id})
         return -1

@@ -5,55 +5,45 @@ import re
 from typing import List, Dict, Any, Optional, Tuple
 from database import get_original_vtt_by_id, get_original_language_by_id
 
+import logger
+import logging
+logger = logging.getLogger("btt_root_logger")
+
 load_dotenv()
 
 ollama_url = os.getenv("OLLAMA_URL", "http://localhost:11434/api/generate")
 model_name = os.getenv("OLLAMA_MODEL", "gpt-oss:120b-cloud")
 
-# Make output_folder an absolute path based on script location
+# if script ran is located in other folder
 script_dir = os.path.dirname(os.path.abspath(__file__))
 output_folder = os.path.join(script_dir, os.getenv("VTT_DEST_FOLDER", "output/"))
 
-# --- Configuration ---
-CONFIG: Dict[str, Any] = {
-    "input_file": "output/11401.vtt",
-    "output_file": "translatedsmall.vtt",
-    "ollama_url": "http://localhost:11434/api/generate",
-    "model_name": "mistral:7b",
-    "chunk_size_chars": 3500,  # Reduced due to previous WARN message
-    "context_window_chars": 500  # Reduced for safety
-}
 
 LANGUAGES: Dict[str, str] = {
     "de": "German",
     "en": "English",
 }
 
-# Regex to capture the timestamp line in a VTT block.
-# Captures: HH:MM:SS.mmm --> HH:MM:SS.mmm [optional settings]
+
+# regex: HH:MM:SS.mmm --> HH:MM:SS.mmm [optional settings]
 TIMESTAMP_LINE_PATTERN = re.compile(
     r"(\d{2}:\d{2}\.\d{3}\s+-->\s+\d{2}:\d{2}\.\d{3}(?:[^\n]*))"
 )
 
+
 def get_original_translation(config: Dict[str, Any]) -> str:
+
     try:
-        raw_content: str = read_file_content(config['input_file'])
-        return raw_content
+        return read_file_content(config['input_file'])
     except FileNotFoundError as e:
-        print(e)
-        print("Could not read original translation file. Trying Database")
-        try:
-            raw_content: str = get_original_vtt_by_id(int(config['id']))
-            if raw_content is None:
-                print("No original translation found in database.")
-                return ""
-            elif raw_content == "":
-                print("Original translation in database is empty.")
-                return ""
-            return raw_content
-        except Exception as db_e:
-            print(f"Database retrieval failed: {db_e}")
-            return ""
+        logger.debug(f"Input file not found: {e}. Attempting to retrieve from database.", extra={'id': config['id']})
+
+    try:
+        return get_original_vtt_by_id(int(config['id']))
+    except Exception as db_e:
+        logger.debug(f"Failed to retrieve original translation from database: {db_e}", extra={'id': config['id']})
+
+    return None;
             
 
 def generate_config(id: int, from_language: str, to_language: str, ollama_url: str, model_name: str) -> Dict[str, Any]:
@@ -203,34 +193,20 @@ def query_ollama(prompt: str, url: str, model: str) -> Optional[str]:
         data: Dict[str, Any] = response.json()
         return data.get("response", "").strip()
     except Exception as e:
-        print(f"  [!] Request failed: {e}")
+        logger.error(f"  [!] Request failed: {e}")
         return None
 
+PLACEHOLDER_PATTERN = re.compile(r'TS\d+')
+
+
 def reinsert_timestamps(translated_blocks: List[str], timestamp_map: Dict[str, str]) -> List[str]:
-    """
-    Replaces the placeholder tokens in the translated blocks with the original timestamps.
-    """
-    final_blocks: List[str] = []
+    """Replaces placeholder tokens with original timestamps."""
     
-    # Sort keys by length descending to prevent partial replacement if one placeholder 
-    # contains another (e.g., TS1 vs TS10 )
-    sorted_placeholders = sorted(timestamp_map.keys(), key=len, reverse=True)
-
-    for block in translated_blocks:
-        temp_block = block
-        
-        # 1. Replace the placeholder token with the full timestamp line
-        for placeholder in sorted_placeholders:
-            timestamp = timestamp_map.get(placeholder)
-            if timestamp:
-                # Replacement pattern: Timestamp\nDialogue
-                replacement = f"{timestamp}" 
-                temp_block = temp_block.replace(placeholder, replacement)
-        
-        # 2. Clean up any remaining extra space/newlines before the dialogue
-        final_blocks.append(temp_block.strip())
-
-    return final_blocks
+    def replace_placeholder(match: re.Match) -> str:
+        placeholder = match.group(0)
+        return timestamp_map.get(placeholder, placeholder)
+    
+    return [PLACEHOLDER_PATTERN.sub(replace_placeholder, block) for block in translated_blocks]
 
 def save_vtt_file(file_path: str, header: str, content_blocks: List[str]) -> None:
     """Assembles blocks, prepends the header, and writes the final VTT file."""
@@ -244,48 +220,39 @@ def save_vtt_file(file_path: str, header: str, content_blocks: List[str]) -> Non
 def run_translation_workflow(id: int, to_langauge: str, from_language: Optional[str]) -> None:
     """Orchestrates the translation with full pre- and post-processing."""
     
-    print(f"--- Starting translation for {id} to {to_langauge} ---")
+    logger.info(f"--- Starting translation for {id} to {to_langauge} ---")
 
     if from_language is None:
         from_language = get_original_language_by_id(id)
 
     config: Dict[str, Any] = generate_config(id, from_language, to_langauge, ollama_url, model_name)
-    print(f"Configuration: {config}")
-    try: 
-        raw_content: str = get_original_translation(config)
-    except Exception as e:
-        print(f"Failed to retrieve original translation: {e}")
-        #TODO maybe send a request to fastapi service to generate the vtt.
-        #TODO maybe raise this
-        #TODO definetly log this
+    logger.debug(f"Configuration: {config}")
+    
+    raw_content: str = get_original_translation(config)
+
+    if raw_content is None:
+        logger.error(f"No valid translation source found for ID {id}. Aborting translation.", extra={'id': id})
         return
     
-    # 1. Parse and Separate Header
     header, blocks = parse_vtt_blocks(raw_content)
 
-    # --- NEW STEP ---
-    # 2. Pre-process: Extract Timestamps and get Dialogue Only
+
     dialogue_blocks, timestamp_map = process_block_timestamps(blocks)
     
-    #print(dialogue_blocks)
-
-    #print("-------")
-
-    #print(timestamp_map)
-    # 3. Chunk the Dialogue Only Blocks
+  
     chunks: List[str] = group_blocks_into_chunks(dialogue_blocks, config['chunk_size_chars'])
     
     total_chunks: int = len(chunks)
     translated_chunks_with_placeholders: List[str] = []
     context_buffer: str = ""
 
-    print(f"Identified {len(blocks)} subtitle blocks. Created {total_chunks} token-efficient chunks.")
-    print(f"Header '{header}' will be preserved.")
+    logger.debug(f"Identified {len(blocks)} subtitle blocks. Created {total_chunks} token-efficient chunks.")
+    logger.debug(f"Header '{header}' will be preserved.")
 
-    # 4. Process Chunks (AI sees dialogue and placeholders only)
+  
     
     for i, chunk in enumerate(chunks):
-        print(f"Translating chunk {i + 1}/{total_chunks}...")
+        logger.debug(f"Translating chunk {i + 1}/{total_chunks}...")
         
         prompt: str = build_translation_prompt(chunk, LANGUAGES[config['from_language']], LANGUAGES[config['to_language']], context_buffer)
         result: Optional[str] = query_ollama(prompt, config['ollama_url'], config['model_name'])
@@ -296,19 +263,16 @@ def run_translation_workflow(id: int, to_langauge: str, from_language: Optional[
             # Context buffer still uses the result (which contains the clean dialogue and placeholders)
             context_buffer = result[-window_size:] 
         else:
-            print(f"  [!] chunk {i + 1} failed. Appending original dialogue.")
+            logger.error(f"  [!] chunk {i + 1} failed. Appending original dialogue.")
             translated_chunks_with_placeholders.append(chunk)
 
-    # --- NEW STEP ---
-    # 5. Post-process: Reinsert Timestamps
-    # We flatten the translated chunks back into a list of individual blocks
+    
     translated_blocks_flat: List[str] = "\n\n".join(translated_chunks_with_placeholders).split('\n\n')
     
     final_translated_blocks: List[str] = reinsert_timestamps(translated_blocks_flat, timestamp_map)
 
-    # 6. Save Output
     save_vtt_file(config['output_file'], header, final_translated_blocks)
-    print(f"--- Process Complete. Saved to {config['output_file']} ---")
+    logger.info(f"--- Process Complete. Saved to {config['output_file']} ---")
 
 if __name__ == "__main__":
     run_translation_workflow(11402, "en", "de")

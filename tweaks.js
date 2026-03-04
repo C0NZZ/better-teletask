@@ -79,19 +79,19 @@ export function keydownHandler(featureSettings, player) {
       case 'k': if (featureSettings?.kplay) {
         const playBtn = player.shadowRoot && player.shadowRoot.querySelector('control-bar').shadowRoot.querySelector('playpause-control').shadowRoot.getElementById('button__play_pause');
         playBtn.click();
-        break;
       }
+      break;
       case '+': case '-': if (featureSettings?.editsubstyle) {
         const subs = player.shadowRoot.querySelector('captions-display').shadowRoot.getElementById('container__captions').querySelector('.caption-cue-text');
         subs.style.fontSize = (parseInt(window.getComputedStyle(subs, null).getPropertyValue('font-size'), 10) + (e.key == '+' ? 5 : -5)).toString() + "px";
-        break;
       }
+      break;
       case 'r': if  (featureSettings?.editsubstyle) {
         const subbox = player.shadowRoot.querySelector('captions-display').shadowRoot.getElementById('container__captions');
         subbox.removeAttribute('style');
         subbox.querySelector('.caption-cue-text').removeAttribute('style');
-        break;
       }
+      break;
       default: return;
     }
   };

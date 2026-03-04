@@ -4,6 +4,7 @@
     <meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width,initial-scale=1"/>
     <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="../fonts/fonts.css">
     <script src="../browser-polyfill.min.js"></script>
     <script src="popup.js"></script>
   </head>
@@ -53,10 +54,6 @@
       <details>
         <summary class="card-header" aria-hidden="true">Features</summary>
         <main class="card-body">
-          <label for="featuresSubtitles">
-            <input type="checkbox" id="featuresSubtitles" name="features" value="subtitles">
-            Subtitles and transcript
-          </label><br>
           <label for="featuresDoubleclick">
             <input type="checkbox" id="featuresDoubleclick" name="features" value="doubleclick">
             Double-click player for fullscreen
@@ -69,10 +66,33 @@
             <input type="checkbox" id="featuresKplay" name="features" value="kplay">
             Press media play key or k to play/pause
           </label><br>
+        </main><main class="card-body">
+          <label for="featuresSubtitles">
+            <input type="checkbox" id="featuresSubtitles" name="features" value="subtitles">
+            Subtitles and transcript
+          </label><br>
           <label for="featuresEditsubstyle">
             <input type="checkbox" id="featuresEditsubstyle" name="features" value="editsubstyle">
             Edit subtitles <small>(resize with +/-, drag; r to reset)</small>
           </label><br>
+          <label for="featuresSubtitleContrast">
+            <input type="checkbox" id="featuresSubtitleContrast" name="features" value="subcontrast">
+            Higher contrast subtitle
+          </label><br>
+          <label for="featuresSubtitleFont">
+            <span style="margin: auto 4px">Subtitle font:</span>
+          </label>
+          <select id="featuresSubtitleFont" name="featuresSubtitleFont">
+            <option value="">Default</option>
+            <option value="Andika">Andika</option>
+            <option value="Atkinson Hyperlegible">Atkinson Hyperlegible</option>
+            <option value="Fast Sans">Fast Sans</option>
+            <option value="Dotted Sans">Dotted Sans</option>
+            <option value="Lexend">Lexend</option>
+            <option value="OpenDyslexic">OpenDyslexic</option>
+            <option value="Fast OpenDyslexic">Fast OpenDyslexic</option>
+            <option value="ShantellSans">ShantellSans</option>
+          </select><br>
           <div class="input-group">
             <button id="featuresSave" class="btn-primary" type="button" aria-label="Save feature settings">Save</button>
             <div id="featuresStatus" class="status">

@@ -12,6 +12,53 @@ export function removeResizeLimit(featureSettings) {
   };
 }
 
+export async function setSubtitleStyle(settings, player) {
+  if (settings?.subcontrast || settings?.subtitleFont) {
+    let subs = null;
+    for (let i = 0; i < 100 && !subs; i++) {
+      subs = player.shadowRoot.querySelector('captions-display').shadowRoot.getElementById('container__captions').querySelector('.caption-cue-text');
+      if (!subs) await new Promise(resolve => setTimeout(resolve, 100));
+    }
+
+    let fontName = settings.subtitleFont
+    if (fontName) {
+
+      let transcript = null;
+      for (let i = 0; i < 100 && !transcript; i++) {
+        transcript = player.shadowRoot.querySelector('interactive-transcript').shadowRoot.getElementById("container__interactive_transcript");
+        if (!transcript) await new Promise(resolve => setTimeout(resolve, 100));
+      }
+
+      if (!document.getElementById('btt-fonts-css')) {
+        const link = document.createElement('link');
+        link.id = 'btt-fonts-css';
+        link.rel = 'stylesheet';
+        link.href = browser.runtime.getURL('fonts/fonts.css');
+        document.head.appendChild(link);
+        await new Promise(resolve => {
+          link.addEventListener('load', resolve, { once: true });
+          link.addEventListener('error', resolve, { once: true });
+        });
+
+        if (subs) {
+          subs.style.fontFamily = `"${fontName}"`;
+          console.info('[btt-subtitles] subtitle font set to', fontName);
+        }
+        else console.warn('[btt-subtitles] subtitle container not found, font not applied');
+        if (transcript) {
+          transcript.style.fontFamily = `"${fontName}"`;
+          console.info('[btt-subtitles] transcript font set to', fontName);
+        }
+        else console.warn('[btt-subtitles] transcript container not found, font not applied');
+      }
+    }
+
+    if (settings?.subcontrast) {
+      subs.style.backgroundColor = 'rgb(0, 0, 0)'
+    }
+  }
+}
+
 export function doubleclickHandler(featureSettings, player) {
   return (e)=>{
     if (!featureSettings?.doubleclick) return;

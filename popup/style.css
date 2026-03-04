@@ -11,6 +11,7 @@
   --max-width: 380px;
   --font-stack: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
   --font-size: .9rem;
+  --btn-bg: linear-gradient(180deg, rgba(231, 166, 110, 0.16), rgba(231, 175, 110, 0.06));
 }
 
 *{box-sizing:border-box}
@@ -85,6 +86,20 @@ input, label {
   font-family: var(--font-stack);
   font-size: 0.95rem;
 }
+select {
+  max-width: 80%;
+  margin-top: 0.35rem;
+  height: 2.5rem;
+  border-radius: 10px;
+  border: 1px solid rgba(231, 160, 110, 0.18);
+  background: var(--glass);
+  color: inherit;
+  outline: none;
+}
+select option {
+  color: initial;
+  font-family: var(--font-stack);
+}
 .input-group {
   display:flex;
   gap:10px;
@@ -130,7 +145,6 @@ input, label {
 #apikeyToggle:hover {opacity: 1;}
 
 .btn-primary {
-  --btn-bg: linear-gradient(180deg, rgba(231, 166, 110, 0.16), rgba(231, 175, 110, 0.06));
   padding: 11px 14px;
   border-radius: 10px;
   border: 1px solid rgba(231, 160, 110, 0.18);

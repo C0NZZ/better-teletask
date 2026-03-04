@@ -1,5 +1,5 @@
 (async function() {
-  const { removeResizeLimit, doubleclickHandler, keydownHandler, subtitleDragHandler, mediasessionHandler } = await import(browser.runtime.getURL('tweaks.js'));
+  const { removeResizeLimit, setSubtitleStyle, doubleclickHandler, keydownHandler, subtitleDragHandler, mediasessionHandler } = await import(browser.runtime.getURL('tweaks.js'));
   const player = document.querySelector('video-player');
   if (!player) {
     console.warn("[btt-tweaks] video player not found, couldn't apply tweaks")
@@ -8,6 +8,8 @@
   const { featureSettings } = await browser.storage.local.get('featureSettings');
 
   removeResizeLimit(featureSettings);
+  
+  await setSubtitleStyle(featureSettings, player);
 
   document.addEventListener('dblclick', doubleclickHandler(featureSettings, player), true);
 

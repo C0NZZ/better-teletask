@@ -69,19 +69,31 @@ document.addEventListener('DOMContentLoaded', async () => {
     const noresizelimit = document.getElementById('featuresNoresizelimit')
     const kplay = document.getElementById('featuresKplay');
     const editsubstyle = document.getElementById('featuresEditsubstyle');
+    const subcontrast = document.getElementById('featuresSubtitleContrast');
+    const subtitleFont = document.getElementById('featuresSubtitleFont');
     const saveBtn = document.getElementById('featuresSave');
     const reloadBtn = document.getElementById('featuresReload');
     const statusDiv = document.getElementById('featuresStatus');
     const { featureSettings } = await browser.storage.local.get('featureSettings');
+
+    const updateSubtitleFontPreview = () => {
+      subtitleFont.style.fontFamily = subtitleFont.value ? `"${subtitleFont.value}"` : 'unset';
+    };
     
     if (featureSettings) {
       for (const [key, value] of Object.entries(featureSettings)) {
         const element = document.getElementById(`features${key.charAt(0).toUpperCase() + key.slice(1)}`);
         if (element) {
-          element.checked = value;
+          if (element.type === 'checkbox') element.checked = value;
         }
       }
+      if (typeof featureSettings.subtitleFont === 'string') subtitleFont.value = featureSettings.subtitleFont;
     }
+    updateSubtitleFontPreview();
+
+    subtitleFont.addEventListener('change', () => {
+      updateSubtitleFontPreview();
+    });
 
     saveBtn.addEventListener('click', async () => {
       const featureSettings = {
@@ -90,14 +102,17 @@ document.addEventListener('DOMContentLoaded', async () => {
         noresizelimit: noresizelimit.checked,
         kplay: kplay.checked,
         editsubstyle: editsubstyle.checked,
+        subcontrast: subcontrast.checked,
+        subtitleFont: subtitleFont.value,
       };
       await browser.storage.local.set({ featureSettings });
       statusDiv.style.visibility = "visible";
     });
     
     reloadBtn.addEventListener('click', async (e) => {
-      const tabs = await browser.tabs.query({ active: true, currentWindow: true });
-      if (tabs[0].url.startsWith("https://www.tele-task.de/lecture/video/")) await browser.tabs.reload(tabs[0].id);
+      e.preventDefault();
+      const tabs = await browser.tabs.query({active: true, currentWindow: true, url: ["https://www.tele-task.de/lecture/video/*"]});
+      if (tabs[0]?.id) await browser.tabs.reload(tabs[0].id);
     });
   }
 });

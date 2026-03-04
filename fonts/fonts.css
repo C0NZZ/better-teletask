@@ -1,0 +1,47 @@
+@font-face {
+  font-family: "Andika";
+  src: url("./Andika.woff2") format("woff2");
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Atkinson Hyperlegible";
+  src: url("./AtkinsonHyperlegible.woff2") format("woff2");
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Fast OpenDyslexic";
+  src: url("./Fast_OpenDyslexic.woff2") format("woff2");
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Dotted Sans";
+  src: url("./Fast_Sans_Dotted.woff2") format("woff2");
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Fast Sans";
+  src: url("./Fast_Sans.woff2") format("woff2");
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Lexend";
+  src: url("./Lexend.woff2") format("woff2");
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "OpenDyslexic";
+  src: url("./OpenDyslexicAlta.woff2") format("woff2");
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "ShantellSans";
+  src: url("./ShantellSans.woff2") format("woff2");
+  font-display: swap;
+}

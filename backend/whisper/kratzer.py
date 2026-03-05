@@ -33,10 +33,10 @@ logger.debug("base output folder: "+baseoutput)
 
 def fetchBody(id) -> Response:
     cookies = {"username": USERNAME_COOKIE}
-    url = baseurl + id
+    url = baseurl + str(id)
     logger.info("requesting "+url, extra={'id': id})
     response = requests.get(url, cookies=cookies, verify='chain.pem')
-    response.raise_for_status()
+    response.raise_for_status() 
     return response
 
 def fetchMP4(id, response) -> str:
@@ -236,7 +236,7 @@ def fetchLecture(id) -> str:
     try: 
         response = fetchBody(id)
     except HTTPError as e:
-        logger.error("Error fetching body:", extra={'id': id})
+        logger.error(f"Error fetching body:{e}", extra={'id': id})
         return ""
 
     url = fetchMP4(id, response)

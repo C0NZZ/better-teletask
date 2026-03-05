@@ -1,9 +1,10 @@
 import psycopg2
 from psycopg2 import extensions
+from psycopg2.extras import execute_values
 import os
 from dotenv import load_dotenv, find_dotenv
 from datetime import datetime
-
+from models import VttFile, VttLine, ApiKey, LectureData, SeriesData, LecturerData, BlacklistEntry, SearchResult
 
 # setup logging
 import logger
@@ -40,6 +41,8 @@ def initDatabase():
         conn.set_isolation_level(extensions.ISOLATION_LEVEL_AUTOCOMMIT)
         cur.execute(
             """
+            CREATE EXTENSION IF NOT EXISTS pg_trgm;
+
             CREATE TABLE IF NOT EXISTS series_data (
                 series_id INTEGER PRIMARY KEY,
                 series_name VARCHAR(255),
@@ -47,7 +50,7 @@ def initDatabase():
             );
             CREATE TABLE IF NOT EXISTS lecturer_data (
                 lecturer_id INTEGER PRIMARY KEY,
-                lecturer_name VARCHAR(255)
+                lecturer_name VARCHAR(255) NOT NULL
             );
             CREATE TABLE IF NOT EXISTS lecture_data (
                 lecture_id INTEGER PRIMARY KEY, 
@@ -73,6 +76,17 @@ def initDatabase():
                 compute_type VARCHAR(255),
                 creation_date TIMESTAMPTZ DEFAULT NOW()
             );
+            CREATE TABLE IF NOT EXISTS vtt_lines (
+                id BIGSERIAL PRIMARY KEY,
+                vtt_file_id INTEGER NOT NULL REFERENCES vtt_files(id) ON DELETE CASCADE,
+                series_id INTEGER NOT NULL REFERENCES series_data(series_id) ON DELETE CASCADE,
+                language VARCHAR(50) NOT NULL,
+                lecturer_ids INTEGER[] NOT NULL,
+                line_number INTEGER NOT NULL,
+                ts_start INTEGER NOT NULL,
+                ts_end INTEGER NOT NULL,
+                content TEXT NOT NULL
+            );
             CREATE TABLE IF NOT EXISTS api_keys (
                 id SERIAL PRIMARY KEY,
                 api_key VARCHAR(255) UNIQUE NOT NULL,
@@ -92,10 +106,49 @@ def initDatabase():
             CREATE INDEX IF NOT EXISTS idx_vtt_files_lecture_id ON vtt_files (lecture_id);
             CREATE INDEX IF NOT EXISTS idx_api_keys_api_key ON api_keys (api_key);
 
+            CREATE INDEX IF NOT EXISTS idx_lines_trgm ON vtt_lines USING gin (content gin_trgm_ops);
+            CREATE INDEX IF NOT EXISTS idx_lines_series_id ON vtt_lines (series_id);
+            CREATE INDEX IF NOT EXISTS idx_lines_lecture_id ON vtt_lines (vtt_file_id);
+            CREATE INDEX IF NOT EXISTS idx_lines_language ON vtt_lines (language);
+
             """)
 
     except (Exception, psycopg2.Error) as error:
         logger.error("Error while connecting to PostgreSQL", error)
+    finally:
+        if conn:
+            cur.close()
+            conn.close()
+
+def get_series_of_vtt_file(vtt_file_id) -> SeriesData | None:
+    conn = None
+    try:
+        conn = psycopg2.connect(
+            dbname=DB_NAME, user=DB_USER, password=DB_PASS, host=DB_HOST, port=DB_PORT
+        )
+        cur = conn.cursor()
+        cur.execute(
+            """
+            SELECT s.series_id, s.series_name, s.lecturer_ids
+            FROM vtt_files vf
+            JOIN lecture_data ld ON vf.lecture_id = ld.lecture_id
+            JOIN series_data s ON ld.series_id = s.series_id
+            WHERE vf.id = %s;
+            """,
+            (vtt_file_id,),
+        )
+        row = cur.fetchone()
+        if row:
+            return SeriesData(
+                series_id=row[0],
+                series_name=row[1],
+                lecturer_ids=row[2],
+            )
+        logger.info(f"No series found for VTT file ID: {vtt_file_id}")
+        return None
+    except (Exception, psycopg2.Error) as error:
+        logger.error("Error while querying PostgreSQL", error)
+        return None
     finally:
         if conn:
             cur.close()
@@ -341,16 +394,13 @@ def add_api_key(api_key, person_name, person_email):
             conn.close()
 
 
-def get_api_key_by_key(api_key):
+def get_api_key_by_key(api_key) -> ApiKey | None:
     conn = None
     try:
-        # --- Connect to PostgreSQL ---
         conn = psycopg2.connect(
             dbname=DB_NAME, user=DB_USER, password=DB_PASS, host=DB_HOST, port=DB_PORT
         )
         cur = conn.cursor()
-
-        # --- Query record ---
         cur.execute(
             "SELECT api_key, person_name, person_email, creation_date, expiration_date, status FROM api_keys WHERE api_key = %s;",
             (api_key,),
@@ -358,14 +408,14 @@ def get_api_key_by_key(api_key):
         row = cur.fetchone()
 
         if row:
-            return {
-                "api_key": row[0],
-                "person_name": row[1],
-                "person_email": row[2],
-                "creation_date": row[3],
-                "expiration_date": row[4],
-                "status": row[5]
-            }
+            return ApiKey(
+                api_key=row[0],
+                person_name=row[1],
+                person_email=row[2],
+                creation_date=row[3],
+                expiration_date=row[4],
+                status=row[5],
+            )
         else:
             logger.info(f"No API key found: {api_key}")
             return None
@@ -378,34 +428,33 @@ def get_api_key_by_key(api_key):
             cur.close()
             conn.close()
 
-def get_api_key_by_name(person_name):
+
+def get_api_key_by_name(person_name) -> list[ApiKey] | None:
     conn = None
     try:
-        # --- Connect to PostgreSQL ---
         conn = psycopg2.connect(
             dbname=DB_NAME, user=DB_USER, password=DB_PASS, host=DB_HOST, port=DB_PORT
         )
         cur = conn.cursor()
-
-        # --- Query record ---
         cur.execute(
             "SELECT api_key, person_name, person_email, creation_date, expiration_date, status FROM api_keys WHERE person_name = %s;",
             (person_name,),
         )
         rows = cur.fetchall()
 
-        api_key_info = []
-        for row in rows:
-            api_key_info.append({
-                "api_key": row[0],
-                "person_name": row[1],
-                "person_email": row[2],
-                "creation_date": row[3],
-                "expiration_date": row[4],
-                "status": row[5]
-            })
-        if api_key_info:
-            return api_key_info
+        api_keys = [
+            ApiKey(
+                api_key=row[0],
+                person_name=row[1],
+                person_email=row[2],
+                creation_date=row[3],
+                expiration_date=row[4],
+                status=row[5],
+            )
+            for row in rows
+        ]
+        if api_keys:
+            return api_keys
         else:
             logger.info(f"No API key found for person name: {person_name}")
             return None
@@ -418,32 +467,27 @@ def get_api_key_by_name(person_name):
             cur.close()
             conn.close()
 
-def get_all_api_keys():
+def get_all_api_keys() -> list[ApiKey]:
     conn = None
     try:
-        # --- Connect to PostgreSQL ---
         conn = psycopg2.connect(
             dbname=DB_NAME, user=DB_USER, password=DB_PASS, host=DB_HOST, port=DB_PORT
         )
         cur = conn.cursor()
-
-        # --- Query all records ---
         cur.execute("SELECT api_key, person_name, person_email, creation_date, expiration_date, status FROM api_keys;")
         rows = cur.fetchall()
 
-        api_keys = []
-        for row in rows:
-            api_key_info = {
-                "api_key": row[0],
-                "person_name": row[1],
-                "person_email": row[2],
-                "creation_date": row[3],
-                "expiration_date": row[4],
-                "status": row[5]
-            }
-            api_keys.append(api_key_info)
-
-        return api_keys
+        return [
+            ApiKey(
+                api_key=row[0],
+                person_name=row[1],
+                person_email=row[2],
+                creation_date=row[3],
+                expiration_date=row[4],
+                status=row[5],
+            )
+            for row in rows
+        ]
 
     except (Exception, psycopg2.Error) as error:
         logger.error("Error while querying PostgreSQL", error)
@@ -487,6 +531,7 @@ def clearDatabase():
 
         cur.execute(
             """
+            DROP TABLE IF EXISTS "vtt_lines";
             DROP TABLE IF EXISTS "vtt_files";
             DROP TABLE IF EXISTS "lecturer_data";
             DROP TABLE IF EXISTS "series_data";
@@ -553,7 +598,7 @@ def save_vtt_as_blob(teletaskid, language, isOriginalLang):
             txt_binary_data = f.read()
 
         cur.execute(
-            "INSERT INTO vtt_files (lecture_id, language, is_original_lang, vtt_data, txt_data, asr_model, compute_type) VALUES (%s,%s,%s,%s,%s,%s,%s);",
+            "INSERT INTO vtt_files (lecture_id, language, is_original_lang, vtt_data, txt_data, asr_model, compute_type) VALUES (%s,%s,%s,%s,%s,%s,%s) RETURNING id;",
             (
                 teletaskid,
                 language,
@@ -565,15 +610,17 @@ def save_vtt_as_blob(teletaskid, language, isOriginalLang):
             ),
         )
 
+        vtt_file_id = cur.fetchone()[0]
         conn.commit()
         logger.info(f"Successfully saved '{file_path}' as BLOB", extra={'id': teletaskid})
-
+        return vtt_file_id
     except (Exception, psycopg2.Error) as error:
         logger.error("Error while connecting to PostgreSQL", error)
     finally:
         if conn:
             cur.close()
             conn.close()
+
 
 
 def getHighestTeletaskID():
@@ -717,52 +764,223 @@ def get_missing_translations():
             cur.close()
             conn.close()
 
-def get_all_vtt_blobs():
+def bulk_insert_vtt_lines(vtt_lines: list[VttLine]):
+    if not vtt_lines:
+        return
     conn = None
     try:
-        # --- Connect to PostgreSQL ---
+        conn = psycopg2.connect(
+            dbname=DB_NAME, user=DB_USER, password=DB_PASS, host=DB_HOST, port=DB_PORT
+        )
+        cur = conn.cursor()
+        values = [
+            (line.vtt_file_id, line.series_id, line.language, line.lecturer_ids, line.line_number, line.ts_start, line.ts_end, line.content)
+            for line in vtt_lines
+        ]
+        execute_values(
+            cur,
+            "INSERT INTO vtt_lines (vtt_file_id, series_id, language, lecturer_ids, line_number, ts_start, ts_end, content) VALUES %s",
+            values,
+            page_size=1000
+        )
+        conn.commit()
+        logger.info(f"Bulk inserted {len(vtt_lines)} VTT lines.")
+    except (Exception, psycopg2.Error) as error:
+        logger.error("Error while bulk inserting VTT lines", error)
+    finally:
+        if conn:
+            cur.close()
+            conn.close()
+
+def search_vtt_lines(
+    query: str,
+    series_id: int | None = None,
+    language: str | None = None,
+    lecturer_id: int | None = None,
+    lecture_id: int | None = None,
+    threshold: float = 0.15,
+    limit: int = 20,
+) -> list[SearchResult]:
+    """Fuzzy search vtt_lines using pg_trgm similarity.
+
+    Optional filters:
+        series_id   - restrict to a specific series
+        language     - restrict to a language (e.g. 'en', 'de')
+        lecturer_id  - restrict to lines whose lecturer_ids array contains this id
+        lecture_id   - restrict to a specific lecture (via vtt_files)
+        threshold    - minimum similarity score (0-1, lower = more results)
+        limit        - max rows returned
+    """
+    conn = None
+    try:
         conn = psycopg2.connect(
             dbname=DB_NAME, user=DB_USER, password=DB_PASS, host=DB_HOST, port=DB_PORT
         )
         cur = conn.cursor()
 
-        # --- Query all records ---
+        filters = ["similarity(vl.content, %s) >= %s"]
+        params: list = [query, threshold]
+
+        if series_id is not None:
+            filters.append("vl.series_id = %s")
+            params.append(series_id)
+
+        if language is not None:
+            filters.append("vl.language = %s")
+            params.append(language)
+
+        if lecturer_id is not None:
+            filters.append("%s = ANY(vl.lecturer_ids)")
+            params.append(lecturer_id)
+
+        if lecture_id is not None:
+            filters.append("vf.lecture_id = %s")
+            params.append(lecture_id)
+
+        where = " AND ".join(filters)
+        params.append(limit)
+
+        sql = f"""
+            SELECT
+                vl.vtt_file_id,
+                vf.lecture_id,
+                vl.series_id,
+                sd.series_name,
+                vl.language,
+                vl.line_number,
+                vl.ts_start,
+                vl.ts_end,
+                vl.content,
+                similarity(vl.content, %s) AS similarity
+            FROM vtt_lines vl
+            JOIN vtt_files vf   ON vf.id = vl.vtt_file_id
+            JOIN series_data sd ON sd.series_id = vl.series_id
+            WHERE {where}
+            ORDER BY similarity DESC
+            LIMIT %s
+        """
+
+        # The first %s in the SELECT is for similarity(); prepend query again
+        cur.execute(sql, [query] + params)
+        rows = cur.fetchall()
+
+        return [
+            SearchResult(
+                vtt_file_id=row[0],
+                lecture_id=row[1],
+                series_id=row[2],
+                series_name=row[3],
+                language=row[4],
+                line_number=row[5],
+                ts_start=row[6],
+                ts_end=row[7],
+                content=row[8],
+                similarity=row[9],
+            )
+            for row in rows
+        ]
+    except (Exception, psycopg2.Error) as error:
+        logger.error("Error while searching VTT lines", error)
+        return []
+    finally:
+        if conn:
+            cur.close()
+            conn.close()
+
+def get_vtt_file_by_id(vtt_file_id) -> VttFile | None:
+    conn = None
+    try:
+        conn = psycopg2.connect(
+            dbname=DB_NAME, user=DB_USER, password=DB_PASS, host=DB_HOST, port=DB_PORT
+        )
+        cur = conn.cursor()
         cur.execute(
-            "SELECT id, lecture_id, language, is_original_lang, vtt_data, txt_data, compute_type FROM vtt_files ORDER BY id;"
+            "SELECT id, lecture_id, language, is_original_lang, vtt_data, txt_data, asr_model, compute_type, creation_date FROM vtt_files WHERE id = %s;",
+            (vtt_file_id,),
+        )
+        row = cur.fetchone()
+        if row:
+            return VttFile(
+                id=row[0],
+                lecture_id=row[1],
+                language=row[2],
+                is_original_lang=row[3],
+                vtt_data=bytes(row[4]),
+                txt_data=bytes(row[5]),
+                asr_model=row[6],
+                compute_type=row[7],
+                creation_date=row[8],
+            )
+        logger.info(f"No VTT file found with ID: {vtt_file_id}")
+        return None
+    except (Exception, psycopg2.Error) as error:
+        logger.error("Error while querying PostgreSQL", error)
+        return None
+    finally:
+        if conn:
+            cur.close()
+            conn.close()
+
+def get_vtt_files_by_lecture_id(lecture_id) -> list[VttFile]:
+    conn = None
+    try:
+        conn = psycopg2.connect(
+            dbname=DB_NAME, user=DB_USER, password=DB_PASS, host=DB_HOST, port=DB_PORT
+        )
+        cur = conn.cursor()
+        cur.execute(
+            "SELECT id, lecture_id, language, is_original_lang, vtt_data, txt_data, asr_model, compute_type, creation_date FROM vtt_files WHERE lecture_id = %s;",
+            (lecture_id,),
+        )
+        rows = cur.fetchall()
+        return [
+            VttFile(
+                id=row[0],
+                lecture_id=row[1],
+                language=row[2],
+                is_original_lang=row[3],
+                vtt_data=bytes(row[4]),
+                txt_data=bytes(row[5]),
+                asr_model=row[6],
+                compute_type=row[7],
+                creation_date=row[8],
+            )
+            for row in rows
+        ]
+    except (Exception, psycopg2.Error) as error:
+        logger.error("Error while querying PostgreSQL", error)
+        return []
+    finally:
+        if conn:
+            cur.close()
+            conn.close()
+
+def get_all_vtt_blobs() -> list[VttFile]:
+    conn = None
+    try:
+        conn = psycopg2.connect(
+            dbname=DB_NAME, user=DB_USER, password=DB_PASS, host=DB_HOST, port=DB_PORT
+        )
+        cur = conn.cursor()
+        cur.execute(
+            "SELECT id, lecture_id, language, is_original_lang, vtt_data, txt_data, asr_model, compute_type, creation_date FROM vtt_files ORDER BY id;"
         )
         rows = cur.fetchall()
         logger.info(f"Retrieved {len(rows)} VTT file(s) from database.")
-
-        """ FOR DEBUGGING PURPOSES ONLY
-        for row in rows:
-            record_id, lecture_id, language, is_original_lang, vtt_data, txt_data, compute_type = (
-                row
+        return [
+            VttFile(
+                id=row[0],
+                lecture_id=row[1],
+                language=row[2],
+                is_original_lang=row[3],
+                vtt_data=bytes(row[4]),
+                txt_data=bytes(row[5]),
+                asr_model=row[6],
+                compute_type=row[7],
+                creation_date=row[8],
             )
-            print(f"--- Record ID: {record_id} ---")
-            print(f"Teletask ID: {lecture_id}")
-            print(f"Language: {language}")
-            print(f"Is Original Language: {isOriginalLang}")
-            print(f"VTT Data (size): {len(vtt_data)} bytes")
-            print(f"Compute Type: {compute_type}")
-            print(f"VTT Content:")
-            print("-" * 50)
-            # Convert memoryview to bytes, then decode to string for display
-            
-            try:
-                vtt_bytes = bytes(vtt_data)
-                vtt_content = vtt_bytes.decode("utf-8")
-                print(vtt_content)
-
-                txt_bytes = bytes(txt_data)
-                txt_content = txt_bytes.decode("utf-8")
-                print(txt_content)
-            except UnicodeDecodeError:
-                print("(Binary data could not be decoded as UTF-8)")
-            print("-" * 50)
-            print()
-            """
-        return rows
-
+            for row in rows
+        ]
     except (Exception, psycopg2.Error) as error:
         logger.error("Error while querying PostgreSQL", error)
         return []
@@ -809,10 +1027,17 @@ def databaseTestScript():
 
 
 if __name__ == "__main__":
+    from kratzer import fetchLecture
     clearDatabase()
     initDatabase()
     #print(get_language_of_lecture(11516))
-    #save_vtt_as_blob(11408, "de", True)
+    save_vtt_as_blob(11408, "de", True)
+    save_vtt_as_blob(11412, "de", True)
+    save_vtt_as_blob(11413, "de", True)
+    fetchLecture(11408)
+    fetchLecture(11412)
+    fetchLecture(11413)
+    #get_all_vtt_blobs()
     #save_vtt_as_blob(11406, "de", True)
     #save_vtt_as_blob(11405, "de", True)
     #save_vtt_as_blob(11402, "de", True)

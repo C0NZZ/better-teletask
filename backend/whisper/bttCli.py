@@ -42,20 +42,20 @@ def handle_api_show(args):
         keys = get_all_api_keys()
         if keys:
             for key in keys:
-                print(f"- Key: {key['api_key']}, Name: {key['person_name']}, Email: {key['person_email']}")
+                print(f"- Key: {key.api_key}, Name: {key.person_name}, Email: {key.person_email}")
         else:
             print("No API keys found.")
     elif args.key:
         print(f"Looking up by API key: {args.key}\n")
         key_info = get_api_key_by_key(args.key)
         if key_info:
-            print(f"- Key: {key_info['api_key']}, Name: {key_info['person_name']}, Email: {key_info['person_email']}")
+            print(f"- Key: {key_info.api_key}, Name: {key_info.person_name}, Email: {key_info.person_email}")
     elif args.name:
         print(f"Looking up by name: {args.name}\n")
         keys = get_api_key_by_name(args.name)
         if keys:
             for key in keys:
-                print(f"- Key: {key['api_key']}, Name: {key['person_name']}, Email: {key['person_email']}")
+                print(f"- Key: {key.api_key}, Name: {key.person_name}, Email: {key.person_email}")
     else:
         print("Please specify --all, --key, or --name")
     print()
@@ -147,7 +147,7 @@ def main():
         description="Better Teletask CLI - Manage API keys and scrape lecture data.",
         epilog="Examples:\n"
                "  python bttCli.py api add 'Crisitan' 'conzz@culator.zaza'\n"
-               "  python bttCli.py api show all\n"
+               "  python bttCli.py api show --all\n"
                "  python bttCli.py api show --key 'your_api_key'\n"
                "  python bttCli.py api show --name 'Crisitan'\n"
                "  python bttCli.py scrape idstatus --count 20\n",

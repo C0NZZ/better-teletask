@@ -5,3 +5,4 @@ beautifulsoup4
 ffmpeg-python
 uvicorn
 fastapi
+webvtt-py == 0.5.1

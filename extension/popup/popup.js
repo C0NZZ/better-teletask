@@ -68,36 +68,67 @@ document.addEventListener('DOMContentLoaded', async () => {
     const doubleclick = document.getElementById('featuresDoubleclick');
     const noresizelimit = document.getElementById('featuresNoresizelimit')
     const kplay = document.getElementById('featuresKplay');
-    const editsubstyle = document.getElementById('featuresEditsubstyle');
+
+    const moveable = document.getElementById('featuresMoveable');
+    const contrast = document.getElementById('featuresContrast');
+    const font = document.getElementById('featuresFont');
+
     const saveBtn = document.getElementById('featuresSave');
     const reloadBtn = document.getElementById('featuresReload');
     const statusDiv = document.getElementById('featuresStatus');
     const { featureSettings } = await browser.storage.local.get('featureSettings');
+
+    const updateFontPreview = () => {
+      font.style.fontFamily = font.value ? `"${font.value}"` : 'unset';
+    };
     
     if (featureSettings) {
       for (const [key, value] of Object.entries(featureSettings)) {
+        if (key === 'subtitlestyle' && typeof value === 'object') {
+          for (const [subKey, subValue] of Object.entries(value)) {
+            const subElement = document.getElementById(`features${subKey.charAt(0).toUpperCase() + subKey.slice(1)}`);
+            if (subElement) {
+              if (subElement.type === 'checkbox') subElement.checked = subValue;
+            }
+          }
+          if (typeof value.font === 'string') font.value = value.font;
+          continue;
+        }
         const element = document.getElementById(`features${key.charAt(0).toUpperCase() + key.slice(1)}`);
         if (element) {
-          element.checked = value;
+          if (element.type === 'checkbox') element.checked = value;
         }
       }
     }
+    updateFontPreview();
+
+    font.addEventListener('change', () => {
+      updateFontPreview();
+    });
 
     saveBtn.addEventListener('click', async () => {
+      const { featureSettings: existing } = await browser.storage.local.get('featureSettings');
       const featureSettings = {
         subtitles: subtitles.checked,
         doubleclick: doubleclick.checked,
         noresizelimit: noresizelimit.checked,
         kplay: kplay.checked,
-        editsubstyle: editsubstyle.checked,
+        subtitlestyle : {
+          moveable: moveable.checked,
+          position: existing?.subtitlestyle?.position ?? [null, null],
+          size: existing?.subtitlestyle?.size ?? null,
+          contrast: contrast.checked,
+          font: font.value,
+        }
       };
       await browser.storage.local.set({ featureSettings });
       statusDiv.style.visibility = "visible";
     });
     
     reloadBtn.addEventListener('click', async (e) => {
-      const tabs = await browser.tabs.query({ active: true, currentWindow: true });
-      if (tabs[0].url.startsWith("https://www.tele-task.de/lecture/video/")) await browser.tabs.reload(tabs[0].id);
+      e.preventDefault();
+      const tabs = await browser.tabs.query({active: true, currentWindow: true, url: ["https://www.tele-task.de/lecture/video/*"]});
+      if (tabs[0]?.id) await browser.tabs.reload(tabs[0].id);
     });
   }
 });

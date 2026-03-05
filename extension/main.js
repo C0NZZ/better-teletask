@@ -1,5 +1,5 @@
 (async function() {
-  const { removeResizeLimit, doubleclickHandler, keydownHandler, subtitleDragHandler, mediasessionHandler } = await import(browser.runtime.getURL('tweaks.js'));
+  const { removeResizeLimit, setSubtitleStyle, doubleclickHandler, keydownHandler, subtitleDragHandler, mediasessionHandler } = await import(browser.runtime.getURL('tweaks.js'));
   const player = document.querySelector('video-player');
   if (!player) {
     console.warn("[btt-tweaks] video player not found, couldn't apply tweaks")
@@ -8,10 +8,19 @@
   const { featureSettings } = await browser.storage.local.get('featureSettings');
 
   removeResizeLimit(featureSettings);
+  
+  const subtitleHandler = async (ev) => {
+    const d = ev.detail || {};
+    if (d.verb === 'video_subtitle_change') {
+      await setSubtitleStyle(featureSettings, player);
+    }
+  };
+  player.addEventListener('analytics', subtitleHandler);
+  window.__stopCaptionSubtitleProbe = () => player.removeEventListener('analytics', subtitleHandler);
 
   document.addEventListener('dblclick', doubleclickHandler(featureSettings, player), true);
 
-  document.addEventListener('keydown', keydownHandler(featureSettings, player));
+  document.addEventListener('keydown', await keydownHandler(featureSettings, player));
 
   if ('mediaSession' in navigator && navigator.mediaSession?.setActionHandler) {
     try {

@@ -2,14 +2,52 @@ export function removeResizeLimit(featureSettings) {
   if (featureSettings?.noresizelimit) {
     const script = document.createElement('script');
     script.textContent = `
-        const videoPlayer = document.querySelector('video-player');
-        const dualStream = videoPlayer.shadowRoot.querySelector('dual-stream');
+        const dualStream = document.querySelector('video-player').shadowRoot.querySelector('dual-stream');
         dualStream._ensureWidthPercentage = (percentage) => Math.max(0, Math.min(1, percentage));
     `;
     
     (document.head || document.documentElement).appendChild(script);
     script.remove();
   };
+}
+
+export async function setSubtitleStyle(settings, player) {
+  if (settings?.subtitlestyle.font || settings?.subtitlestyle.contrast || settings?.subtitlestyle.moveable) {
+    const subbox = player.shadowRoot.querySelector('captions-display').shadowRoot.getElementById('container__captions');
+    
+    if (settings?.subtitlestyle.font) {
+      if (!document.getElementById('btt-fonts-css')) {
+        const link = document.createElement('link');
+        link.id = 'btt-fonts-css';
+        link.rel = 'stylesheet';
+        link.href = browser.runtime.getURL('fonts/fonts.css');
+        document.head.appendChild(link);
+        await new Promise(resolve => {
+          link.addEventListener('load', resolve, { once: true });
+          link.addEventListener('error', resolve, { once: true });
+        });
+      }
+
+      const transcript = player.shadowRoot.querySelector('interactive-transcript').shadowRoot.getElementById("container__interactive_transcript");
+      const fontName = settings.subtitlestyle.font
+      if (fontName) {
+        transcript.style.fontFamily = `"${fontName}"`;
+        subbox.style.fontFamily = `"${fontName}"`;
+        console.info('[btt-subtitles] captions font set to', fontName);
+        window.__stopCaptionSubtitleProbe?.()
+      }
+    }
+
+    if (settings?.subtitlestyle.contrast) {
+      subbox.querySelector('.caption-cue-text').style.backgroundColor = 'rgb(0, 0, 0)';
+    }
+
+    if (settings?.subtitlestyle.moveable) {
+      if (settings.subtitlestyle.position[0]) {subbox.style.left = settings.subtitlestyle.position[0]};
+      if (settings.subtitlestyle.position[1]) {subbox.style.bottom = settings.subtitlestyle.position[1]};
+      if (settings.subtitlestyle.size) {subbox.querySelector('.caption-cue-text').style.fontSize = settings.subtitlestyle.size};
+    }
+  }
 }
 
 export function doubleclickHandler(featureSettings, player) {
@@ -27,24 +65,30 @@ export function doubleclickHandler(featureSettings, player) {
 }
 
 export function keydownHandler(featureSettings, player) {
-  return (e)=>{
+  return async (e)=>{
     switch (e.key.toLowerCase()) {
       case 'k': if (featureSettings?.kplay) {
         const playBtn = player.shadowRoot && player.shadowRoot.querySelector('control-bar').shadowRoot.querySelector('playpause-control').shadowRoot.getElementById('button__play_pause');
         playBtn.click();
-        break;
       }
-      case '+': case '-': if (featureSettings?.editsubstyle) {
+      break;
+      case '+': case '-': if (featureSettings?.subtitlestyle.moveable) {
         const subs = player.shadowRoot.querySelector('captions-display').shadowRoot.getElementById('container__captions').querySelector('.caption-cue-text');
         subs.style.fontSize = (parseInt(window.getComputedStyle(subs, null).getPropertyValue('font-size'), 10) + (e.key == '+' ? 5 : -5)).toString() + "px";
-        break;
+        featureSettings.subtitlestyle.size = subs.style.fontSize;
+        await browser.storage.local.set({ featureSettings });
       }
-      case 'r': if  (featureSettings?.editsubstyle) {
+      break;
+      case 'r': if  (featureSettings?.subtitlestyle.moveable) {
         const subbox = player.shadowRoot.querySelector('captions-display').shadowRoot.getElementById('container__captions');
-        subbox.removeAttribute('style');
-        subbox.querySelector('.caption-cue-text').removeAttribute('style');
-        break;
+        subbox.style.removeProperty('left');
+        subbox.style.removeProperty('bottom');
+        subbox.querySelector('.caption-cue-text').style.removeProperty('font-size');
+        featureSettings.subtitlestyle.size = null;
+        featureSettings.subtitlestyle.position = [null, null];
+        await browser.storage.local.set({ featureSettings });
       }
+      break;
       default: return;
     }
   };
@@ -59,7 +103,7 @@ export function mediasessionHandler(featureSettings, player) {
 }
 
 export function subtitleDragHandler(featureSettings, player) {
-  if (!featureSettings?.editsubstyle) return null;
+  if (!featureSettings?.subtitlestyle.moveable) return null;
 
   const subbox = player.shadowRoot.querySelector('captions-display').shadowRoot.getElementById('container__captions');
 
@@ -76,9 +120,10 @@ export function subtitleDragHandler(featureSettings, player) {
     offsetY = rect.bottom - e.clientY;
   };
 
-  const onMouseUp = () => {
+  const onMouseUp = async () => {
     if (draggingSubs) {
       draggingSubs = false;
+      await browser.storage.local.set({ featureSettings });
     }
   };
 
@@ -86,7 +131,9 @@ export function subtitleDragHandler(featureSettings, player) {
     if (draggingSubs) {
       const parentRect = subbox.offsetParent.getBoundingClientRect();
       subbox.style.left = (e.clientX - parentRect.left - offsetX) + "px";
+      featureSettings.subtitlestyle.position[0] = subbox.style.left;
       subbox.style.bottom = (parentRect.bottom - e.clientY - offsetY) + "px";
+      featureSettings.subtitlestyle.position[1] = subbox.style.bottom;
     }
   };
 

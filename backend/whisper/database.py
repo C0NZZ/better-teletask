@@ -1,6 +1,7 @@
 import psycopg2
 from psycopg2 import extensions
 from psycopg2.extras import execute_values
+from pgvector.psycopg2 import register_vector
 import os
 from dotenv import load_dotenv, find_dotenv
 from datetime import datetime
@@ -42,6 +43,7 @@ def initDatabase():
         cur.execute(
             """
             CREATE EXTENSION IF NOT EXISTS pg_trgm;
+            CREATE EXTENSION IF NOT EXISTS vector;
 
             CREATE TABLE IF NOT EXISTS series_data (
                 series_id INTEGER PRIMARY KEY,
@@ -85,7 +87,8 @@ def initDatabase():
                 line_number INTEGER NOT NULL,
                 ts_start INTEGER NOT NULL,
                 ts_end INTEGER NOT NULL,
-                content TEXT NOT NULL
+                content TEXT NOT NULL,
+                embedding vector(1024)
             );
             CREATE TABLE IF NOT EXISTS api_keys (
                 id SERIAL PRIMARY KEY,
@@ -110,6 +113,7 @@ def initDatabase():
             CREATE INDEX IF NOT EXISTS idx_lines_series_id ON vtt_lines (series_id);
             CREATE INDEX IF NOT EXISTS idx_lines_lecture_id ON vtt_lines (vtt_file_id);
             CREATE INDEX IF NOT EXISTS idx_lines_language ON vtt_lines (language);
+            CREATE INDEX IF NOT EXISTS idx_lines_embedding ON vtt_lines USING ivfflat (embedding vector_cosine_ops) WITH (lists = 100);
 
             """)
 
@@ -772,14 +776,15 @@ def bulk_insert_vtt_lines(vtt_lines: list[VttLine]):
         conn = psycopg2.connect(
             dbname=DB_NAME, user=DB_USER, password=DB_PASS, host=DB_HOST, port=DB_PORT
         )
+        register_vector(conn)
         cur = conn.cursor()
         values = [
-            (line.vtt_file_id, line.series_id, line.language, line.lecturer_ids, line.line_number, line.ts_start, line.ts_end, line.content)
+            (line.vtt_file_id, line.series_id, line.language, line.lecturer_ids, line.line_number, line.ts_start, line.ts_end, line.content, line.embedding)
             for line in vtt_lines
         ]
         execute_values(
             cur,
-            "INSERT INTO vtt_lines (vtt_file_id, series_id, language, lecturer_ids, line_number, ts_start, ts_end, content) VALUES %s",
+            "INSERT INTO vtt_lines (vtt_file_id, series_id, language, lecturer_ids, line_number, ts_start, ts_end, content, embedding) VALUES %s",
             values,
             page_size=1000
         )
@@ -801,7 +806,10 @@ def search_vtt_lines(
     threshold: float = 0.15,
     limit: int = 20,
 ) -> list[SearchResult]:
-    """Fuzzy search vtt_lines using pg_trgm similarity.
+    """Fuzzy search vtt_lines using pg_trgm word_similarity.
+
+    Uses word_similarity() which finds the best matching substring within
+    the content, so longer lines containing the query are not penalized.
 
     Optional filters:
         series_id   - restrict to a specific series
@@ -818,7 +826,7 @@ def search_vtt_lines(
         )
         cur = conn.cursor()
 
-        filters = ["similarity(vl.content, %s) >= %s"]
+        filters = ["word_similarity(%s, vl.content) >= %s"]
         params: list = [query, threshold]
 
         if series_id is not None:
@@ -851,7 +859,7 @@ def search_vtt_lines(
                 vl.ts_start,
                 vl.ts_end,
                 vl.content,
-                similarity(vl.content, %s) AS similarity
+                word_similarity(%s, vl.content) AS similarity
             FROM vtt_lines vl
             JOIN vtt_files vf   ON vf.id = vl.vtt_file_id
             JOIN series_data sd ON sd.series_id = vl.series_id
@@ -860,7 +868,6 @@ def search_vtt_lines(
             LIMIT %s
         """
 
-        # The first %s in the SELECT is for similarity(); prepend query again
         cur.execute(sql, [query] + params)
         rows = cur.fetchall()
 
@@ -881,6 +888,126 @@ def search_vtt_lines(
         ]
     except (Exception, psycopg2.Error) as error:
         logger.error("Error while searching VTT lines", error)
+        return []
+    finally:
+        if conn:
+            cur.close()
+            conn.close()
+
+def semantic_search_vtt_lines(
+    query_embedding: list[float],
+    series_id: int | None = None,
+    language: str | None = None,
+    lecturer_id: int | None = None,
+    lecture_id: int | None = None,
+    limit: int = 20,
+    context_window: int = 2,
+) -> list[SearchResult]:
+    """Semantic search vtt_lines using pgvector cosine distance.
+
+    Args:
+        query_embedding - the 1024-dim embedding of the search query
+                          (use SentenceTransformer.encode() to produce this)
+    Optional filters:
+        series_id     - restrict to a specific series
+        language       - restrict to a language (e.g. 'en', 'de')
+        lecturer_id    - restrict to lines whose lecturer_ids array contains this id
+        lecture_id     - restrict to a specific lecture (via vtt_files)
+        limit          - max rows returned
+        context_window - number of surrounding lines to include (default 2 = ±2 lines)
+    """
+    conn = None
+    try:
+        conn = psycopg2.connect(
+            dbname=DB_NAME, user=DB_USER, password=DB_PASS, host=DB_HOST, port=DB_PORT
+        )
+        register_vector(conn)
+        cur = conn.cursor()
+
+        filters = ["vl.embedding IS NOT NULL"]
+        params: list = []
+
+        if series_id is not None:
+            filters.append("vl.series_id = %s")
+            params.append(series_id)
+
+        if language is not None:
+            filters.append("vl.language = %s")
+            params.append(language)
+
+        if lecturer_id is not None:
+            filters.append("%s = ANY(vl.lecturer_ids)")
+            params.append(lecturer_id)
+
+        if lecture_id is not None:
+            filters.append("vf.lecture_id = %s")
+            params.append(lecture_id)
+
+        where = " AND ".join(filters)
+
+        sql = f"""
+            WITH ranked AS (
+                SELECT
+                    vl.vtt_file_id,
+                    vf.lecture_id,
+                    vl.series_id,
+                    sd.series_name,
+                    vl.language,
+                    vl.line_number,
+                    vl.ts_start,
+                    vl.ts_end,
+                    vl.content,
+                    1 - (vl.embedding <=> %s::vector) AS similarity
+                FROM vtt_lines vl
+                JOIN vtt_files vf   ON vf.id = vl.vtt_file_id
+                JOIN series_data sd ON sd.series_id = vl.series_id
+                WHERE {where}
+                ORDER BY vl.embedding <=> %s::vector
+                LIMIT %s
+            )
+            SELECT
+                r.vtt_file_id,
+                r.lecture_id,
+                r.series_id,
+                r.series_name,
+                r.language,
+                r.line_number,
+                r.ts_start,
+                r.ts_end,
+                r.content,
+                r.similarity,
+                (
+                    SELECT string_agg(ctx.content, ' ' ORDER BY ctx.line_number)
+                    FROM vtt_lines ctx
+                    WHERE ctx.vtt_file_id = r.vtt_file_id
+                      AND ctx.line_number BETWEEN r.line_number - %s AND r.line_number + %s
+                ) AS context
+            FROM ranked r
+            ORDER BY r.similarity DESC
+        """
+
+        all_params = params + [query_embedding, query_embedding, limit, context_window, context_window]
+        cur.execute(sql, all_params)
+        rows = cur.fetchall()
+
+        return [
+            SearchResult(
+                vtt_file_id=row[0],
+                lecture_id=row[1],
+                series_id=row[2],
+                series_name=row[3],
+                language=row[4],
+                line_number=row[5],
+                ts_start=row[6],
+                ts_end=row[7],
+                content=row[8],
+                similarity=row[9],
+                context=row[10],
+            )
+            for row in rows
+        ]
+    except (Exception, psycopg2.Error) as error:
+        logger.error("Error while semantic searching VTT lines", error)
         return []
     finally:
         if conn:

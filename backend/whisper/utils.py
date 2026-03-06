@@ -1,10 +1,14 @@
 import webvtt
+import numpy as np
+from sentence_transformers import SentenceTransformer
 from database import get_vtt_file_by_id, bulk_insert_vtt_lines, get_series_of_vtt_file
 from models import VttFile, VttLine
 
 import logger
 import logging
 logger = logging.getLogger("btt_root_logger")
+
+embedding_model = SentenceTransformer("BAAI/bge-m3")
 
 # HH:MM:SS.mmm
 def timestamp_to_ms(timestamp: str) -> int:
@@ -28,18 +32,35 @@ def save_vtt_lines(vtt_id: int):
         logger.error(f"VTT file with ID {vtt_id} not found.")
         return
 
+    captions = list(webvtt.from_string(vtt_file.vtt_data.decode('utf-8')))
+    texts = [caption.text for caption in captions]
+
+    # Build context windows: each line gets surrounding lines for better embeddings
+    WINDOW_SIZE = 2  # number of lines before and after
+    context_texts = []
+    for i in range(len(texts)):
+        start = max(0, i - WINDOW_SIZE)
+        end = min(len(texts), i + WINDOW_SIZE + 1)
+        window = " ".join(texts[start:end])
+        context_texts.append(window)
+
+    # Embed the context windows, not individual lines
+    logger.info(f"Computing embeddings for {len(context_texts)} lines with context window (vtt_id={vtt_id})...")
+    embeddings = embedding_model.encode(context_texts, batch_size=256, show_progress_bar=False)
+
     vtt_lines: list[VttLine] = []
-    for i,caption in enumerate(webvtt.from_string(vtt_file.vtt_data.decode('utf-8'))):
+    for i, caption in enumerate(captions):
         line = VttLine(
             id=None,
             vtt_file_id=vtt_file.id,
             series_id=series.series_id,
             language=vtt_file.language,
             lecturer_ids=lecturer_ids,
-            line_number=i + 1,  # Set line number based on enumeration
+            line_number=i + 1,
             ts_start=timestamp_to_ms(caption.start),
             ts_end=timestamp_to_ms(caption.end),
-            content=caption.text
+            content=caption.text,
+            embedding=embeddings[i].tolist()
         )
         vtt_lines.append(line)    
 

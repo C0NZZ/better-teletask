@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import date, datetime, timedelta
 from typing import Optional
 
@@ -55,6 +55,7 @@ class VttLine:
     ts_start: int
     ts_end: int
     content: str
+    embedding: Optional[list[float]] = field(default=None, repr=False)
 
 
 @dataclass
@@ -88,3 +89,4 @@ class SearchResult:
     ts_end: int
     content: str
     similarity: float
+    context: Optional[str] = None

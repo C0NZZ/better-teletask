@@ -2,7 +2,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   {
     const versiontext = document.getElementById('version').querySelector('a');
     const version = browser.runtime.getManifest().version;
-    versiontext.setAttribute('href',`https://github.com/C0NZZ/better-teletask/releases/tag/v${version}`);
+    versiontext.setAttribute('href',`https://github.com/vieledatengutedaten/better-teletask-extension/releases/tag/v${version}`);
     versiontext.textContent = "v" + version;
   }
   {

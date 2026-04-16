@@ -39,7 +39,9 @@ export async function setSubtitleStyle(settings, player) {
     }
 
     if (settings?.subtitlestyle.contrast) {
-      subbox.querySelector('.caption-cue-text').style.backgroundColor = 'rgb(0, 0, 0)';
+      const cuetext = subbox.querySelector('.caption-cue-text')
+      cuetext.style.backgroundColor = 'rgb(0, 0, 0)';
+      cuetext.style.color = 'rgb(255, 240, 0)'
     }
 
     if (settings?.subtitlestyle.moveable) {

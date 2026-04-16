@@ -1,11 +1,11 @@
 {
   "manifest_version": 2,
   "name": "Better Tele-Task",
-  "version": "0.8.2",
+  "version": "0.8.3",
 
   "description": "Adds useful features like subtitles to HPI Tele-Task.",
 
-  "homepage_url": "https://github.com/C0NZZ/better-teletask",
+  "homepage_url": "https://github.com/vieledatengutedaten/better-teletask-extension",
 
   "icons": {
     "32": "icons/32.png",

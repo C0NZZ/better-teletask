@@ -132,6 +132,17 @@ npm run zip:firefox-mv3
 
 Load unpacked: point the browser at the matching `.output/<target>/` folder.
 
+## CORS and the Background Script
+
+`fetch()` inside a content script is treated by the browser as coming from the **host page's origin** (`www.tele-task.de`). `btt.makeruniverse.de` doesn't send `Access-Control-Allow-Origin`, so the browser blocks it with a CORS error.
+
+Background scripts (service workers in MV3, background pages in MV2) fetch from the **extension origin**, which the browser exempts from CORS when `host_permissions` covers the URL. The fix:
+
+1. `entrypoints/background.js` — listens for `{ type: 'FETCH_SUBTITLE', url, apiKey }` messages, performs the fetch, returns `{ ok, text }` or `{ ok, error }`.
+2. `entrypoints/subtitles.content.js` — replaces the direct `fetch()` call with `browser.runtime.sendMessage(...)`.
+
+The listener returns `true` from `onMessage` to keep the response channel open for the async fetch result (required by the WebExtension spec).
+
 ## Notes / Gotchas
 
 - `data_collection_permissions` is a recent Firefox addition; kept under `browser_specific_settings.gecko` and ignored by Chrome.
